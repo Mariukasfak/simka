@@ -13,7 +13,7 @@ const nextConfig = {
         hostname: 'assets.zyrosite.com',
       }
     ],
-  },
+  }
 }
 
 export default nextConfig

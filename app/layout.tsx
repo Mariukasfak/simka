@@ -38,7 +38,16 @@ export default function RootLayout({
           </main>
           <Footer />
         </div>
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+          }} 
+        />
       </body>
     </html>
   )

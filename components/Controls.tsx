@@ -1,4 +1,9 @@
-import { useCallback } from 'react'
+'use client'
+
+import { motion } from 'framer-motion'
+import { Slider } from '@/components/ui/Slider'
+import { Button } from '@/components/ui/Button'
+import { RefreshCw } from 'lucide-react'
 
 interface ControlsProps {
   scale: number
@@ -13,76 +18,68 @@ export default function Controls({
   onScaleChange,
   onOpacityChange
 }: ControlsProps) {
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     onScaleChange(1)
     onOpacityChange(1)
-  }, [onScaleChange, onOpacityChange])
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 p-6 bg-white rounded-lg shadow-sm">
       <div>
-        <div className="flex justify-between mb-1">
-          <label htmlFor="scale-slider" className="form-label">
+        <div className="flex justify-between items-center mb-2">
+          <label className="text-sm font-medium text-brand-900">
             Dydis
           </label>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-brand-600">
             {Math.round(scale * 100)}%
           </span>
         </div>
-        <input
-          id="scale-slider"
-          type="range"
-          min="0.2"
-          max="2"
-          step="0.01"
+        <Slider
           value={scale}
-          onChange={(e) => onScaleChange(parseFloat(e.target.value))}
-          className="w-full"
+          min={0.2}
+          max={2}
+          step={0.01}
+          onChange={onScaleChange}
         />
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>20%</span>
-          <span>100%</span>
-          <span>200%</span>
-        </div>
       </div>
 
       <div>
-        <div className="flex justify-between mb-1">
-          <label htmlFor="opacity-slider" className="form-label">
+        <div className="flex justify-between items-center mb-2">
+          <label className="text-sm font-medium text-brand-900">
             Permatomumas
           </label>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-brand-600">
             {Math.round(opacity * 100)}%
           </span>
         </div>
-        <input
-          id="opacity-slider"
-          type="range"
-          min="0.1"
-          max="1"
-          step="0.01"
+        <Slider
           value={opacity}
-          onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
-          className="w-full"
+          min={0.1}
+          max={1}
+          step={0.01}
+          onChange={onOpacityChange}
         />
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>10%</span>
-          <span>50%</span>
-          <span>100%</span>
-        </div>
       </div>
 
-      <button
+      <Button
         onClick={handleReset}
-        className="btn btn-secondary w-full"
-        type="button"
+        variant="outline"
+        className="w-full"
+        icon={RefreshCw}
       >
         Atstatyti nustatymus
-      </button>
+      </Button>
 
-      <div className="text-sm text-gray-500 italic mt-2">
-        Pastaba: Paveikslėlį galite perkelti tiesiog pele tempiant jį ant rūbo.
-        Naudokite rodyklių klavišus tikslesniam pozicionavimui.
+      <div className="text-sm text-brand-600 space-y-2">
+        <p>
+          <span className="font-medium">Valdymas:</span>
+        </p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Tempkite pele norėdami perkelti dizainą</li>
+          <li>Naudokite rodyklių klavišus tikslesniam pozicionavimui</li>
+          <li>Laikykite SHIFT + rodyklės klavišą didesniam žingsniui</li>
+          <li>Spauskite R, kad atstatytumėte poziciją</li>
+        </ul>
       </div>
     </div>
   )
