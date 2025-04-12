@@ -1,12 +1,18 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import type { Metadata } from 'next'
+import { Toaster } from 'react-hot-toast'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
-const inter = Inter({ subsets: ['latin', 'latin-ext'] })
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Susikurk savo dizainą | Siemka.lt',
-  description: 'Interaktyvus įrankis, leidžiantis susikurti unikalius marškinėlius ar džemperius su savo logotipu. Greita peržiūra ir užsakymas internetu - Siemka.lt.',
+  description: 'Interaktyvus įrankis, leidžiantis susikurti unikalius marškinėlius ar džemperius su savo logotipu.',
   openGraph: {
     title: 'Susikurk savo marškinėlių dizainą',
     description: 'Įkelk savo logotipą ir matyk, kaip jis atrodys ant rūbų.',
@@ -14,11 +20,6 @@ export const metadata: Metadata = {
     siteName: 'Siemka.lt',
     locale: 'lt_LT',
     type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Susikurk savo dizainą | Siemka.lt',
-    description: 'Interaktyvus įrankis marškinėlių ir džemperių dizainui',
   }
 }
 
@@ -28,11 +29,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="lt">
-      <body className={inter.className}>
-        <main className="min-h-screen bg-gray-50">
-          {children}
-        </main>
+    <html lang="lt" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-grow bg-gray-50 py-8">
+            {children}
+          </main>
+          <Footer />
+        </div>
+        <Toaster position="top-right" />
       </body>
     </html>
   )

@@ -1,121 +1,180 @@
-import { FormData } from '@/lib/types'
+'use client'
+
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { orderFormSchema, type OrderFormData } from '@/lib/validations/order'
+import toast from 'react-hot-toast'
 
 interface OrderFormProps {
-  formData: FormData
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
-  onSubmit: (e: React.FormEvent) => void
+  onSubmit: (data: OrderFormData) => Promise<void>
   isSubmitting: boolean
   disabled?: boolean
+  designPreview: string | null
 }
 
-export default function OrderForm({ 
-  formData, 
-  onChange, 
-  onSubmit, 
+export default function OrderForm({
+  onSubmit,
   isSubmitting,
-  disabled = false
+  disabled = false,
+  designPreview
 }: OrderFormProps) {
+  const [showPreview, setShowPreview] = useState(false)
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm<OrderFormData>({
+    resolver: zodResolver(orderFormSchema),
+    defaultValues: {
+      quantity: 1,
+      size: 'M'
+    }
+  })
+
+  const handleFormSubmit = async (data: OrderFormData) => {
+    try {
+      await onSubmit(data)
+      reset()
+      toast.success('Užsakymas sėkmingai pateiktas!')
+    } catch (error) {
+      toast.error('Įvyko klaida pateikiant užsakymą')
+      console.error('Order submission error:', error)
+    }
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {/* Name field */}
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {/* Preview Modal */}
+      {showPreview && designPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
+            <h3 className="text-lg font-medium mb-4">Užsakymo peržiūra</h3>
+            <img 
+              src={designPreview} 
+              alt="Design Preview" 
+              className="mb-4 max-h-96 mx-auto"
+            />
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className="btn btn-secondary"
+              >
+                Grįžti
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Siunčiama...' : 'Patvirtinti užsakymą'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Form Fields */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Vardas <span className="text-red-500">*</span>
         </label>
         <input
-          id="name"
-          name="name"
+          {...register('name')}
           type="text"
-          required
-          value={formData.name}
-          onChange={onChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          placeholder="Įveskite savo vardą"
           disabled={isSubmitting || disabled}
         />
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+        )}
       </div>
-      
-      {/* Email field */}
+
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           El. paštas <span className="text-red-500">*</span>
         </label>
         <input
-          id="email"
-          name="email"
+          {...register('email')}
           type="email"
-          required
-          value={formData.email}
-          onChange={onChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-          placeholder="jusu@pastas.lt"
           disabled={isSubmitting || disabled}
         />
+        {errors.email && (
+          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+        )}
       </div>
-      
-      {/* Comments field */}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="size" className="block text-sm font-medium text-gray-700">
+            Dydis <span className="text-red-500">*</span>
+          </label>
+          <select
+            {...register('size')}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            disabled={isSubmitting || disabled}
+          >
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+          </select>
+          {errors.size && (
+            <p className="mt-1 text-sm text-red-600">{errors.size.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
+            Kiekis <span className="text-red-500">*</span>
+          </label>
+          <input
+            {...register('quantity', { valueAsNumber: true })}
+            type="number"
+            min="1"
+            max="100"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            disabled={isSubmitting || disabled}
+          />
+          {errors.quantity && (
+            <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
+          )}
+        </div>
+      </div>
+
       <div>
         <label htmlFor="comments" className="block text-sm font-medium text-gray-700">
           Papildomi komentarai
         </label>
         <textarea
-          id="comments"
-          name="comments"
+          {...register('comments')}
           rows={3}
-          value={formData.comments}
-          onChange={onChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           placeholder="Jei turite papildomų pageidavimų ar klausimų, užrašykite juos čia"
           disabled={isSubmitting || disabled}
         />
+        {errors.comments && (
+          <p className="mt-1 text-sm text-red-600">{errors.comments.message}</p>
+        )}
       </div>
-      
-      {/* Submit buttons */}
+
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <button
-          type="submit"
-          className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isSubmitting || disabled}
-        >
-          {isSubmitting ? (
-            <>
-              <svg 
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24"
-              >
-                <circle 
-                  className="opacity-25" 
-                  cx="12" 
-                  cy="12" 
-                  r="10" 
-                  stroke="currentColor" 
-                  strokeWidth="4"
-                />
-                <path 
-                  className="opacity-75" 
-                  fill="currentColor" 
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Siunčiama...
-            </>
-          ) : "Pateikti užsakymą"}
-        </button>
-        
-        <button
           type="button"
-          className="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isSubmitting || disabled}
-          onClick={() => {
-            alert('Ši funkcija bus prieinama netrukus!');
-          }}
+          onClick={() => setShowPreview(true)}
+          className="flex-1 btn btn-primary"
+          disabled={isSubmitting || disabled || !designPreview}
         >
-          Gauti peržiūrą el. paštu
+          Peržiūrėti užsakymą
         </button>
       </div>
-      
+
       {disabled && (
         <div className="text-sm text-gray-500 italic">
           Pirma įkelkite paveikslėlį, kad galėtumėte pateikti užsakymą.

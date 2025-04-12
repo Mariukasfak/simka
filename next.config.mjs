@@ -2,12 +2,16 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['app.siemka.lt'],
+    domains: ['assets.zyrosite.com'],
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**.webcontainer-api.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'assets.zyrosite.com',
+      }
     ],
   },
 }
