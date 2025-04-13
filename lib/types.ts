@@ -49,6 +49,7 @@ export interface Product {
   type: 'hoodie' | 'tshirt';
   color: 'light' | 'dark';
   price: number;
+  description?: string; // Pridedame aprašymo lauką kaip neprivalomą
 }
 
 export interface ProductColor {
@@ -66,4 +67,29 @@ export interface OrderFormData {
   quantity: number;
   comments?: string;
   printAreas: PrintAreaPosition[];
+}
+
+// Admin dashboards types
+export interface Order {
+  id: string;
+  customerName: string;
+  status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  totalPrice: number;
+  createdAt: string;
+}
+
+export interface AnalyticsData {
+  totalOrders: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  popularProducts: {
+    productId: string;
+    name: string;
+    count: number;
+  }[];
+  dailyRevenue: {
+    date: string;
+    revenue: number;
+  }[];
+  recentOrders: Order[];
 }

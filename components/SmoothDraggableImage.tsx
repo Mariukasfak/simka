@@ -6,8 +6,10 @@ interface SmoothDraggableImageProps {
   position: DesignPosition
   scale: number
   opacity: number
+  rotation: number
   onPositionChange: (position: DesignPosition) => void
   containerRef: React.RefObject<HTMLDivElement>
+  printAreaRef?: React.RefObject<HTMLDivElement> // Nauja prop
 }
 
 export default function SmoothDraggableImage({
@@ -15,15 +17,17 @@ export default function SmoothDraggableImage({
   position,
   scale,
   opacity,
+  rotation,
   onPositionChange,
-  containerRef
+  containerRef,
+  printAreaRef
 }: SmoothDraggableImageProps) {
   const elementRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [bounds, setBounds] = useState({ left: 0, top: 0, right: 0, bottom: 0 })
+  const [bounds, setBounds] = useState({ left: -1000, top: -1000, right: 1000, bottom: 1000 }) // Pradines reikšmės didesnės
   
-  // Refs for smooth dragging
+  // Performance optimization refs
   const dragStartRef = useRef({ x: 0, y: 0 })
   const currentPositionRef = useRef(position)
   const rafRef = useRef<number>()
@@ -38,21 +42,55 @@ export default function SmoothDraggableImage({
       const container = containerRef.current.getBoundingClientRect()
       const image = imageRef.current.getBoundingClientRect()
       
+      // Skaičiuojame mastelį pagal dydį
       const scaledWidth = image.width * scale
       const scaledHeight = image.height * scale
       
-      setBounds({
-        left: -scaledWidth / 2,
-        top: -scaledHeight / 2,
-        right: container.width - scaledWidth / 2,
-        bottom: container.height - scaledHeight / 2
-      })
+      // Didesnės ribos, kad būtų galima patekti į spausdinimo zoną
+      // Jei turime spausdinimo zonos nuorodą, naudojame ją
+      if (printAreaRef && printAreaRef.current) {
+        const printArea = printAreaRef.current.getBoundingClientRect()
+        const containerCenter = {
+          x: container.width / 2,
+          y: container.height / 2
+        }
+        
+        const printAreaCenter = {
+          x: (printArea.left - container.left) + printArea.width / 2,
+          y: (printArea.top - container.top) + printArea.height / 2
+        }
+        
+        const offsetX = printAreaCenter.x - containerCenter.x
+        const offsetY = printAreaCenter.y - containerCenter.y
+        
+        // Nustatome ribas, labiau orientuotas į spausdinimo zoną
+        setBounds({
+          left: -container.width + offsetX,
+          top: -container.height + offsetY,
+          right: container.width + offsetX,
+          bottom: container.height + offsetY
+        })
+      } else {
+        // Nustatome ribas, kad vaizdas galėtų judėti visame konteineryje
+        setBounds({
+          left: -scaledWidth,
+          top: -scaledHeight,
+          right: container.width,
+          bottom: container.height
+        })
+      }
     }
 
     updateBounds()
     window.addEventListener('resize', updateBounds)
+    
+    // Atnaujinkime ribas ir po vaizdo įkėlimo
+    const img = new Image()
+    img.src = imageUrl
+    img.onload = updateBounds
+    
     return () => window.removeEventListener('resize', updateBounds)
-  }, [scale, containerRef])
+  }, [scale, containerRef, printAreaRef, imageUrl])
 
   // Smooth animation frame update
   const updatePosition = useCallback((x: number, y: number) => {
@@ -66,7 +104,8 @@ export default function SmoothDraggableImage({
     elementRef.current.style.transform = `
       translate(-50%, -50%) 
       translate3d(${boundedX}px, ${boundedY}px, 0) 
-      scale(${scale})
+      scale(${scale}) 
+      rotate(${rotation}deg)
     `
     
     // Store current position
@@ -78,7 +117,7 @@ export default function SmoothDraggableImage({
       onPositionChange({ x: boundedX, y: boundedY })
       lastUpdateRef.current = now
     }
-  }, [bounds, scale, onPositionChange])
+  }, [bounds, scale, rotation, onPositionChange])
 
   // Mouse event handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -93,8 +132,8 @@ export default function SmoothDraggableImage({
     
     // Optimize for dragging
     if (elementRef.current) {
-      elementRef.current.style.transition = 'none'
-      elementRef.current.style.cursor = 'grabbing'
+      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition')
+      elementRef.current.classList.remove('smooth-transition')
       elementRef.current.style.willChange = 'transform'
     }
   }, [])
@@ -125,8 +164,8 @@ export default function SmoothDraggableImage({
     }
     
     if (elementRef.current) {
-      elementRef.current.style.transition = 'transform 0.2s'
-      elementRef.current.style.cursor = 'grab'
+      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition')
+      elementRef.current.classList.add('smooth-transition')
       elementRef.current.style.willChange = 'auto'
     }
     
@@ -148,7 +187,8 @@ export default function SmoothDraggableImage({
     }
     
     if (elementRef.current) {
-      elementRef.current.style.transition = 'none'
+      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition')
+      elementRef.current.classList.remove('smooth-transition')
       elementRef.current.style.willChange = 'transform'
     }
   }, [])
@@ -178,7 +218,8 @@ export default function SmoothDraggableImage({
     }
     
     if (elementRef.current) {
-      elementRef.current.style.transition = 'transform 0.2s'
+      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition')
+      elementRef.current.classList.add('smooth-transition')
       elementRef.current.style.willChange = 'auto'
     }
     
@@ -188,7 +229,7 @@ export default function SmoothDraggableImage({
   // Add/remove event listeners
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mousemove', handleMouseMove, { passive: true })
       document.addEventListener('mouseup', handleMouseUp)
       document.addEventListener('touchmove', handleTouchMove, { passive: false })
       document.addEventListener('touchend', handleTouchEnd)
@@ -215,20 +256,21 @@ export default function SmoothDraggableImage({
           translate(-50%, -50%) 
           translate3d(${position.x}px, ${position.y}px, 0) 
           scale(${scale})
+          rotate(${rotation}deg)
         `
       }
     }
-  }, [position, scale, isDragging])
+  }, [position, scale, rotation, isDragging])
 
   return (
     <div
       ref={elementRef}
-      className={`absolute cursor-grab ${isDragging ? 'cursor-grabbing z-10' : ''}`}
+      className={`absolute cursor-grab performance-boost draggable-image smooth-transition 
+        ${isDragging ? 'cursor-grabbing z-10 dragging active-dragging no-transition' : ''}`}
       style={{
-        transform: `translate(-50%, -50%) translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})`,
+        transform: `translate(-50%, -50%) translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) rotate(${rotation}deg)`,
         opacity,
         transformOrigin: 'center',
-        transition: isDragging ? 'none' : 'transform 0.2s',
         touchAction: 'none'
       }}
       onMouseDown={handleMouseDown}

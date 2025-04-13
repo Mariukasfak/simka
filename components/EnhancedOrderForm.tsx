@@ -314,7 +314,7 @@ export default function EnhancedOrderForm({
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           className="flex-1"
           disabled={isSubmitting || disabled || !hasAnyDesign}
         >

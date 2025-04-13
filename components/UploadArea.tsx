@@ -204,7 +204,7 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
               </p>
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                variant="primary"
+                variant="default"
                 icon={ImageIcon}
               >
                 Pasirinkti failą

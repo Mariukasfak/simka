@@ -11,13 +11,16 @@ if (!FIGMA_FILE_KEY) {
   throw new Error('FIGMA_FILE_KEY is not defined')
 }
 
+// Šis kintamasis yra užtikrintas, kad yra string, nes patikrinome anksčiau
+const FILE_KEY = FIGMA_FILE_KEY as string
+
 export const figmaClient = Client({
   personalAccessToken: FIGMA_ACCESS_TOKEN
 })
 
 export async function getFigmaFile() {
   try {
-    const file = await figmaClient.file(FIGMA_FILE_KEY)
+    const file = await figmaClient.file(FILE_KEY)
     return file
   } catch (error) {
     console.error('Error fetching Figma file:', error)
@@ -27,7 +30,7 @@ export async function getFigmaFile() {
 
 export async function getFigmaImages(nodeIds: string[]) {
   try {
-    const images = await figmaClient.fileImages(FIGMA_FILE_KEY, {
+    const images = await figmaClient.fileImages(FILE_KEY, {
       ids: nodeIds,
       format: 'png',
       scale: 2
@@ -48,8 +51,8 @@ export async function getProductMockups() {
       child => child.name === 'Product Mockups'
     )
 
-    if (!mockupsFrame) {
-      throw new Error('Product Mockups frame not found')
+    if (!mockupsFrame || !('children' in mockupsFrame)) {
+      throw new Error('Product Mockups frame not found or has no children')
     }
 
     // Get all mockup components

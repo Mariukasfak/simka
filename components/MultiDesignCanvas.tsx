@@ -135,7 +135,7 @@ export default function MultiDesignCanvas({
           </Button>
         </div>
         <Button
-          variant="primary"
+          variant="default"
           size="sm"
           onClick={onAddDesign}
           icon={Plus}

@@ -80,11 +80,13 @@ export default function Home() {
   
   // Load product from URL params
   useEffect(() => {
-    const productId = searchParams.get('product')
-    if (productId) {
-      const product = products.find(p => p.id === productId)
-      if (product) {
-        setSelectedProduct(product)
+    if (searchParams) {
+      const productId = searchParams.get('product')
+      if (productId) {
+        const product = products.find(p => p.id === productId)
+        if (product) {
+          setSelectedProduct(product)
+        }
       }
     }
     
@@ -186,7 +188,11 @@ export default function Home() {
   // Get current product view image
   const getCurrentProductImage = () => {
     const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS]
-    return views ? views[currentView] : selectedProduct.imageUrl
+    // Saugiai tikriname, ar views turi currentView, jei ne - gražiname numatytąjį produkto vaizdą
+    return views && currentView in views ? 
+      // Čia naudojame indekso tipo prieigą su apsauga
+      views[currentView as keyof typeof views] : 
+      selectedProduct.imageUrl
   }
 
   return (

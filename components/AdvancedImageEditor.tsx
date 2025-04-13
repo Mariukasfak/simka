@@ -391,7 +391,7 @@ export default function AdvancedImageEditor({
               Atšaukti
             </Button>
             <Button
-              variant="primary"
+              variant="default"
               className="flex-1"
               onClick={handleSave}
               disabled={isProcessing}

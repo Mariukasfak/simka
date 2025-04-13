@@ -4,6 +4,7 @@ import html2canvas from 'html2canvas'
 import { RefreshCw, RotateCw, RotateCcw } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Slider } from './ui/Slider'
+import SmoothDraggableImage from './SmoothDraggableImage'
 import type { PrintArea, PrintAreaPosition, DesignState } from '@/lib/types'
 
 interface EnhancedDesignCanvasProps {
@@ -28,117 +29,122 @@ export default function EnhancedDesignCanvas({
   onViewChange
 }: EnhancedDesignCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  const printAreaRef = useRef<HTMLDivElement>(null) // Nauja nuoroda į spausdinimo zoną
   const [isGenerating, setIsGenerating] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const lastPositionRef = useRef(designState.position)
-  const movementThreshold = 2
-
-  // Generate preview with increased debounce time
+  const previewInProgressRef = useRef(false)
+  
+  // Optimizuotas peržiūros generavimas - padidinta debounce reikšmė ir triggerinimas tik reikšmingų pakeitimų
   const generatePreview = useCallback(
     debounce(async () => {
-      if (!canvasRef.current || !uploadedImage) {
-        onPreviewGenerated(null)
-        return
+      if (!canvasRef.current || !uploadedImage || previewInProgressRef.current) {
+        return;
       }
 
       try {
+        previewInProgressRef.current = true;
         setIsGenerating(true)
         setError(null)
         
         const canvas = await html2canvas(canvasRef.current, {
           backgroundColor: null,
-          scale: 1,
+          scale: 2, // Padidintas mastelis geresnei kokybei
           logging: false,
           useCORS: true,
           allowTaint: true
         })
         
-        const preview = canvas.toDataURL('image/jpeg', 0.85)
+        const preview = canvas.toDataURL('image/jpeg', 0.9)
         onPreviewGenerated(preview)
       } catch (error) {
-        console.error('Error generating preview:', error)
+        console.error('Peržiūros generavimo klaida:', error)
         setError('Nepavyko sugeneruoti peržiūros')
         onPreviewGenerated(null)
       } finally {
         setIsGenerating(false)
+        previewInProgressRef.current = false;
       }
-    }, 1000), // Increased from 500ms to 1000ms
+    }, 1500), // Padidinta debounce reikšmė stabilesniam veikimui
     [uploadedImage, onPreviewGenerated]
   )
 
-  // Optimized mouse movement handler with threshold
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return
-    
-    const movementX = e.movementX
-    const movementY = e.movementY
-    
-    // Ignore small movements below threshold
-    if (Math.abs(movementX) < movementThreshold && Math.abs(movementY) < movementThreshold) {
-      return
-    }
-
-    const newPosition = {
-      x: lastPositionRef.current.x + movementX,
-      y: lastPositionRef.current.y + movementY
-    }
-    
-    lastPositionRef.current = newPosition
-    
-    onDesignChange({
-      position: newPosition
-    })
-  }, [isDragging, onDesignChange])
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-    lastPositionRef.current = designState.position
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }, [handleMouseMove, designState.position])
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-    generatePreview()
-  }, [handleMouseMove, generatePreview])
-
-  const handleReset = useCallback(() => {
-    onDesignChange({
-      position: { x: 0, y: 0 },
-      rotation: 0,
-      scale: 1,
-      opacity: 1
-    })
+  const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
+    onDesignChange({ position: newPosition })
   }, [onDesignChange])
 
+  const handleReset = useCallback(() => {
+    // Nustatome poziciją į spausdinimo zonos centrą, jei yra
+    if (printAreaRef.current && canvasRef.current) {
+      const printArea = printAreaRef.current.getBoundingClientRect()
+      const container = canvasRef.current.getBoundingClientRect()
+      
+      const containerCenter = {
+        x: container.width / 2,
+        y: container.height / 2
+      }
+      
+      const printAreaCenter = {
+        x: (printArea.left - container.left) + printArea.width / 2,
+        y: (printArea.top - container.top) + printArea.height / 2
+      }
+      
+      const offsetX = printAreaCenter.x - containerCenter.x
+      const offsetY = printAreaCenter.y - containerCenter.y
+      
+      onDesignChange({
+        position: { x: offsetX, y: offsetY },
+        rotation: 0,
+        scale: 1,
+        opacity: 1
+      })
+    } else {
+      // Jei negalime gauti spausdinimo zonos, naudojame numatytuosius
+      onDesignChange({
+        position: { x: 0, y: 0 },
+        rotation: 0,
+        scale: 1,
+        opacity: 1
+      })
+    }
+  }, [onDesignChange])
+
+  // Valymas sunaikinant komponentą
   useEffect(() => {
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
       generatePreview.cancel()
     }
-  }, [handleMouseMove, handleMouseUp, generatePreview])
+  }, [generatePreview])
 
-  // Only trigger preview generation on significant state changes
+  // Peržiūros generavimas po reikšmingų pakeitimų
   useEffect(() => {
-    if (!isDragging) {
-      generatePreview()
+    generatePreview()
+  }, [
+    productImage, 
+    uploadedImage, 
+    designState.scale, 
+    designState.opacity, 
+    designState.rotation, 
+    currentView,
+    generatePreview
+  ])
+  
+  // Atnaujinkime pradinę poziciją pakrovus naują vaizdą
+  useEffect(() => {
+    if (uploadedImage && !designState.position.x && !designState.position.y) {
+      // Kai naujas vaizdas įkeltas, bet pozicija dar nenustatyta, centruojame jį
+      handleReset()
     }
-  }, [productImage, uploadedImage, designState.scale, designState.opacity, designState.rotation, generatePreview, isDragging])
+  }, [uploadedImage, designState.position, handleReset])
 
   return (
     <div className="space-y-4">
-      {/* View selection buttons */}
+      {/* Rodinio pasirinkimo mygtukai */}
       <div className="flex justify-center gap-2 mb-4">
         {Object.entries(printAreas).map(([position, area]) => (
           <Button
             key={position}
-            variant={currentView === position ? 'primary' : 'outline'}
+            variant={currentView === position ? 'default' : 'outline'}
             size="sm"
             onClick={() => onViewChange(position as PrintAreaPosition)}
           >
@@ -147,7 +153,7 @@ export default function EnhancedDesignCanvas({
         ))}
       </div>
 
-      {/* Controls */}
+      {/* Valdikliai */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <div className="flex justify-between items-center mb-1">
@@ -225,7 +231,7 @@ export default function EnhancedDesignCanvas({
         className="relative w-full aspect-square bg-white rounded-lg shadow-md overflow-hidden"
       >
         {showGrid && (
-          <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none">
+          <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none z-10">
             {Array.from({ length: 16 }).map((_, i) => (
               <div
                 key={i}
@@ -235,9 +241,10 @@ export default function EnhancedDesignCanvas({
           </div>
         )}
         
-        {/* Print area indicator */}
+        {/* Spausdinimo srities indikatorius */}
         <div
-          className="absolute border-2 border-dashed border-accent-400 rounded-lg pointer-events-none"
+          ref={printAreaRef} // Pridėta nuoroda į printArea elementą
+          className="absolute border-2 border-dashed border-accent-400 rounded-lg pointer-events-none z-10"
           style={{
             top: `${printAreas[currentView].bounds.top}%`,
             left: `${printAreas[currentView].bounds.left}%`,
@@ -253,26 +260,20 @@ export default function EnhancedDesignCanvas({
         />
         
         {uploadedImage && (
-          <div
-            className="absolute top-1/2 left-1/2 cursor-move"
-            style={{
-              transform: `translate(-50%, -50%) translate(${designState.position.x}px, ${designState.position.y}px) scale(${designState.scale}) rotate(${designState.rotation}deg)`,
-              opacity: designState.opacity,
-              transition: isDragging ? 'none' : 'transform 0.1s, opacity 0.1s'
-            }}
-            onMouseDown={handleMouseDown}
-          >
-            <img
-              src={uploadedImage}
-              alt="Įkeltas dizainas"
-              className="max-w-[200px] max-h-[200px] pointer-events-none select-none"
-              draggable={false}
-            />
-          </div>
+          <SmoothDraggableImage
+            imageUrl={uploadedImage}
+            position={designState.position}
+            scale={designState.scale}
+            opacity={designState.opacity}
+            rotation={designState.rotation}
+            onPositionChange={handlePositionChange}
+            containerRef={canvasRef}
+            printAreaRef={printAreaRef} // Perduodame nuorodą į spausdinimo zoną
+          />
         )}
         
         {isGenerating && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 z-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600 mb-2"></div>
             <span className="text-sm text-accent-600">Generuojama peržiūra...</span>
           </div>
@@ -293,8 +294,11 @@ export default function EnhancedDesignCanvas({
 
       {uploadedImage && !designState.confirmed && (
         <Button
-          onClick={() => onDesignChange({ confirmed: true })}
-          variant="primary"
+          onClick={() => {
+            onDesignChange({ confirmed: true });
+            generatePreview();  // Generuojame galutinę peržiūrą patvirtinus
+          }}
+          variant="default"
           className="w-full mt-4"
         >
           Patvirtinti dizainą

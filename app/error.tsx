@@ -25,7 +25,7 @@ export default function ErrorPage({
         </p>
         <Button
           onClick={reset}
-          variant="primary"
+          variant="default"
         >
           Bandyti iš naujo
         </Button>

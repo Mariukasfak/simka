@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         .filter(([_, url]) => url)
         .map(([area, url]) => ({
           filename: `design-${area}.jpg`,
-          path: url,
+          path: url as string,
           encoding: 'base64',
         })),
     });

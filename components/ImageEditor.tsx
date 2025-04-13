@@ -250,7 +250,7 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
         <Button variant="outline" onClick={onCancel}>
           Atšaukti
         </Button>
-        <Button variant="primary" icon={Save} onClick={handleSave}>
+        <Button variant="default" icon={Save} onClick={handleSave}>
           Išsaugoti
         </Button>
       </div>

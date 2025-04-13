@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef } from 'react'
-import { DivideIcon as LucideIcon } from 'lucide-react'
+import { LucideIcon } from 'lucide-react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
@@ -30,7 +30,7 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  icon?: LucideIcon
+  icon?: React.ElementType
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
