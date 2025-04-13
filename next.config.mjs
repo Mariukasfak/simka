@@ -13,6 +13,11 @@ const nextConfig = {
         hostname: 'assets.zyrosite.com',
       }
     ],
+    unoptimized: true
+  },
+  experimental: {
+    swcMinify: true,
+    disableOptimizedLoading: true
   }
 }
 

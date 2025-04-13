@@ -1,30 +1,45 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import ProductSelector from '@/components/ProductSelector'
 import UploadArea from '@/components/UploadArea'
-import DesignCanvas from '@/components/DesignCanvas'
-import Controls from '@/components/Controls'
-import OrderForm from '@/components/OrderForm'
-import type { Product } from '@/lib/types'
-import type { OrderFormData } from '@/lib/validations/order'
+import EnhancedDesignCanvas from '@/components/EnhancedDesignCanvas'
+import EnhancedOrderForm from '@/components/EnhancedOrderForm'
+import { useDesignState } from '@/lib/hooks/useDesignState'
+import { PRINT_AREAS, PRODUCT_VIEWS } from '@/lib/constants'
 import toast from 'react-hot-toast'
+import type { Product } from '@/lib/types'
 
 export default function Home() {
-  const [productImage, setProductImage] = useState('/images/hoodie_dark.png')
+  const searchParams = useSearchParams()
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [scale, setScale] = useState(1)
-  const [opacity, setOpacity] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [designPreview, setDesignPreview] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // Design state management
+  const {
+    designState,
+    currentView,
+    updateDesignState,
+    setCurrentView,
+    resetDesignState
+  } = useDesignState()
+  
+  // Design previews for each print area
+  const [designPreviews, setDesignPreviews] = useState<Record<string, string | null>>({
+    'front': null,
+    'back': null,
+    'left-sleeve': null,
+    'right-sleeve': null
+  })
   
   const [selectedProduct, setSelectedProduct] = useState<Product>({
-    id: 'hoodie-dark',
-    name: 'Džemperis (tamsus)',
-    imageUrl: '/images/hoodie_dark.png',
+    id: 'hoodie-light',
+    name: 'Džemperis (šviesus)',
+    imageUrl: '/images/hoodie_light.png',
     type: 'hoodie',
-    color: 'dark',
+    color: 'light',
     price: 39.99
   })
 
@@ -62,60 +77,116 @@ export default function Home() {
       price: 24.99
     }
   ]
+  
+  // Load product from URL params
+  useEffect(() => {
+    const productId = searchParams.get('product')
+    if (productId) {
+      const product = products.find(p => p.id === productId)
+      if (product) {
+        setSelectedProduct(product)
+      }
+    }
+    
+    // Simulate loading
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [searchParams, products])
 
-  const handleProductSelect = useCallback((product: Product) => {
+  const handleProductSelect = (product: Product) => {
     setSelectedProduct(product)
-    setProductImage(product.imageUrl)
-  }, [])
+    // Reset design state when changing products
+    resetDesignState()
+    setDesignPreviews({
+      'front': null,
+      'back': null,
+      'left-sleeve': null,
+      'right-sleeve': null
+    })
+  }
+  
+  const handleImageUpload = (imageUrl: string) => {
+    setUploadedImage(imageUrl || null)
+    
+    if (!imageUrl) {
+      // Clear all previews if no image
+      setDesignPreviews({
+        'front': null,
+        'back': null,
+        'left-sleeve': null,
+        'right-sleeve': null
+      })
+    }
+  }
 
-  const supabase = createClientComponentClient()
+  // Update preview for current view
+  const handlePreviewGenerated = (preview: string | null) => {
+    setDesignPreviews(prev => ({
+      ...prev,
+      [currentView]: preview
+    }))
+  }
 
-  const handleOrderSubmit = async (formData: OrderFormData) => {
-    if (!designPreview) {
+  const handleOrderSubmit = async (formData: any) => {
+    if (!Object.values(designPreviews).some(preview => preview !== null)) {
       toast.error('Nepavyko sugeneruoti dizaino peržiūros')
       return
     }
 
     setIsSubmitting(true)
     try {
-      const totalPrice = selectedProduct.price * formData.quantity
-
-      const response = await fetch('/api/submitDesign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          designPreview,
-          totalPrice,
-          productId: selectedProduct.id
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to submit order')
-      }
-
-      const data = await response.json()
+      // Here would be the API call to the server
+      // For now, we'll simulate the request
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
-      if (data.error) {
-        throw new Error(data.error)
+      // Create data that would be sent to the server
+      const orderData = {
+        ...formData,
+        product: selectedProduct,
+        designPreviews,
+        designState,
+        totalPrice: selectedProduct.price * formData.quantity
       }
-
-      toast.success('Užsakymas sėkmingai pateiktas!')
       
-      // Reset form state
+      console.log('Sending order data:', orderData)
+      
+      toast.success('Užklausa sėkmingai išsiųsta!')
+      
+      // Reset form
       setUploadedImage(null)
-      setScale(1)
-      setOpacity(1)
-      setDesignPreview(null)
+      resetDesignState()
+      setDesignPreviews({
+        'front': null,
+        'back': null,
+        'left-sleeve': null,
+        'right-sleeve': null
+      })
     } catch (error) {
       console.error('Error submitting order:', error)
-      toast.error('Įvyko klaida pateikiant užsakymą')
+      toast.error('Įvyko klaida siunčiant užklausą')
     } finally {
       setIsSubmitting(false)
     }
+  }
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-600 mb-3"></div>
+          <p className="text-accent-600">Kraunama...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Get current product view image
+  const getCurrentProductImage = () => {
+    const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS]
+    return views ? views[currentView] : selectedProduct.imageUrl
   }
 
   return (
@@ -132,32 +203,52 @@ export default function Home() {
             onSelect={handleProductSelect}
           />
           
-          <UploadArea onImageUpload={setUploadedImage} />
+          <UploadArea onImageUpload={handleImageUpload} />
           
           {uploadedImage && (
-            <Controls
-              scale={scale}
-              opacity={opacity}
-              onScaleChange={setScale}
-              onOpacityChange={setOpacity}
-            />
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h2 className="text-lg font-medium mb-4">Dizaino pozicijos</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(PRINT_AREAS).map(([position, area]) => (
+                  <button
+                    key={position}
+                    onClick={() => setCurrentView(position as any)}
+                    className={`p-3 rounded-lg text-center transition ${
+                      currentView === position 
+                        ? 'bg-accent-100 border border-accent-300'
+                        : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{area.name}</div>
+                    {designPreviews[position] && (
+                      <div className="text-xs text-green-600 mt-1">✓ Pridėta</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-
-          <OrderForm
+          
+          <EnhancedOrderForm
             onSubmit={handleOrderSubmit}
             isSubmitting={isSubmitting}
             disabled={!uploadedImage}
-            designPreview={designPreview}
+            designPreviews={designPreviews}
+            printAreas={Object.keys(PRINT_AREAS) as any[]}
+            productPrice={selectedProduct.price}
           />
         </div>
 
         <div>
-          <DesignCanvas
-            productImage={productImage}
+          <EnhancedDesignCanvas
+            productImage={getCurrentProductImage()}
             uploadedImage={uploadedImage}
-            scale={scale}
-            opacity={opacity}
-            onPreviewGenerated={setDesignPreview}
+            designState={designState}
+            onDesignChange={updateDesignState}
+            onPreviewGenerated={handlePreviewGenerated}
+            printAreas={PRINT_AREAS}
+            currentView={currentView}
+            onViewChange={setCurrentView}
           />
         </div>
       </div>

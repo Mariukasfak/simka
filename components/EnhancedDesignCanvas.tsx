@@ -3,27 +3,33 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import html2canvas from 'html2canvas'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, RotateCw, RotateCcw } from 'lucide-react'
 import { Button } from './ui/Button'
+import { Slider } from './ui/Slider'
+import type { PrintArea, PrintAreaPosition, DesignState } from '@/lib/types'
 
-interface DesignCanvasProps {
+interface EnhancedDesignCanvasProps {
   productImage: string
   uploadedImage: string | null
-  scale: number
-  opacity: number
+  designState: DesignState
+  onDesignChange: (changes: Partial<DesignState>) => void
   onPreviewGenerated: (preview: string | null) => void
+  printAreas: Record<PrintAreaPosition, PrintArea>
+  currentView: PrintAreaPosition
+  onViewChange: (view: PrintAreaPosition) => void
 }
 
-export default function DesignCanvas({
+export default function EnhancedDesignCanvas({
   productImage,
   uploadedImage,
-  scale,
-  opacity,
-  onPreviewGenerated
-}: DesignCanvasProps) {
+  designState,
+  onDesignChange,
+  onPreviewGenerated,
+  printAreas,
+  currentView,
+  onViewChange
+}: EnhancedDesignCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
@@ -31,9 +37,13 @@ export default function DesignCanvas({
 
   // Reset position
   const handleReset = useCallback(() => {
-    setPosition({ x: 0, y: 0 })
-    setRotation(0)
-  }, [])
+    onDesignChange({
+      position: { x: 0, y: 0 },
+      rotation: 0,
+      scale: 1,
+      opacity: 1
+    })
+  }, [onDesignChange])
 
   // Update position when dragging
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -42,11 +52,13 @@ export default function DesignCanvas({
     const movementX = e.movementX
     const movementY = e.movementY
     
-    setPosition(prev => ({
-      x: prev.x + movementX,
-      y: prev.y + movementY
-    }))
-  }, [isDragging])
+    onDesignChange({
+      position: {
+        x: designState.position.x + movementX,
+        y: designState.position.y + movementY
+      }
+    })
+  }, [isDragging, designState.position, onDesignChange])
 
   // Handle start dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -62,45 +74,6 @@ export default function DesignCanvas({
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', handleMouseUp)
   }, [handleMouseMove])
-
-  // Touch handling
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault()
-    if (e.touches.length !== 1) return
-    
-    const touch = e.touches[0]
-    const startX = touch.clientX
-    const startY = touch.clientY
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return
-      
-      const touch = e.touches[0]
-      const diffX = touch.clientX - startX
-      const diffY = touch.clientY - startY
-      
-      setPosition(prev => ({
-        x: prev.x + diffX,
-        y: prev.y + diffY
-      }))
-    }
-    
-    const handleTouchEnd = () => {
-      document.removeEventListener('touchmove', handleTouchMove)
-      document.removeEventListener('touchend', handleTouchEnd)
-    }
-    
-    document.addEventListener('touchmove', handleTouchMove, { passive: false })
-    document.addEventListener('touchend', handleTouchEnd)
-  }, [])
-
-  // Clean up event listeners
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [handleMouseMove, handleMouseUp])
 
   // Generate preview when design elements change
   const generatePreview = useCallback(
@@ -139,10 +112,71 @@ export default function DesignCanvas({
   useEffect(() => {
     generatePreview()
     return generatePreview.cancel
-  }, [productImage, uploadedImage, scale, opacity, position, rotation, generatePreview])
+  }, [productImage, uploadedImage, designState, currentView, generatePreview])
+
+  // Clean up event listeners
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [handleMouseMove, handleMouseUp])
 
   return (
     <div className="space-y-4">
+      {/* View selection buttons */}
+      <div className="flex justify-center gap-2 mb-4">
+        {Object.entries(printAreas).map(([position, area]) => (
+          <Button
+            key={position}
+            variant={currentView === position ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => onViewChange(position as PrintAreaPosition)}
+          >
+            {area.name}
+          </Button>
+        ))}
+      </div>
+
+      {/* Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm font-medium text-brand-900">
+              Dydis
+            </label>
+            <span className="text-sm text-brand-600">
+              {Math.round(designState.scale * 100)}%
+            </span>
+          </div>
+          <Slider
+            value={designState.scale}
+            min={0.2}
+            max={3}
+            step={0.01}
+            onChange={(value) => onDesignChange({ scale: value })}
+          />
+        </div>
+        
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-sm font-medium text-brand-900">
+              Permatomumas
+            </label>
+            <span className="text-sm text-brand-600">
+              {Math.round(designState.opacity * 100)}%
+            </span>
+          </div>
+          <Slider
+            value={designState.opacity}
+            min={0.1}
+            max={1}
+            step={0.01}
+            onChange={(value) => onDesignChange({ opacity: value })}
+          />
+        </div>
+      </div>
+
       <div className="flex gap-2 mb-4">
         <Button
           variant="outline"
@@ -158,6 +192,22 @@ export default function DesignCanvas({
           onClick={() => setShowGrid(!showGrid)}
         >
           {showGrid ? 'Slėpti tinklelį' : 'Rodyti tinklelį'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDesignChange({ rotation: designState.rotation - 15 })}
+          icon={RotateCcw}
+        >
+          -15°
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDesignChange({ rotation: designState.rotation + 15 })}
+          icon={RotateCw}
+        >
+          +15°
         </Button>
       </div>
 
@@ -176,6 +226,17 @@ export default function DesignCanvas({
           </div>
         )}
         
+        {/* Print area indicator */}
+        <div
+          className="absolute border-2 border-dashed border-accent-400 rounded-lg pointer-events-none"
+          style={{
+            top: `${printAreas[currentView].bounds.top}%`,
+            left: `${printAreas[currentView].bounds.left}%`,
+            width: `${printAreas[currentView].bounds.width}%`,
+            height: `${printAreas[currentView].bounds.height}%`,
+          }}
+        />
+        
         <img
           src={productImage}
           alt="Produkto vaizdas"
@@ -186,12 +247,11 @@ export default function DesignCanvas({
           <div
             className="absolute top-1/2 left-1/2 cursor-move"
             style={{
-              transform: `translate(-50%, -50%) translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
-              opacity: opacity,
+              transform: `translate(-50%, -50%) translate(${designState.position.x}px, ${designState.position.y}px) scale(${designState.scale}) rotate(${designState.rotation}deg)`,
+              opacity: designState.opacity,
               transition: isDragging ? 'none' : 'transform 0.1s, opacity 0.1s'
             }}
             onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
           >
             <img
               src={uploadedImage}
@@ -210,9 +270,9 @@ export default function DesignCanvas({
       </div>
 
       <div className="flex justify-between text-sm text-gray-500">
-        <span>X: {Math.round(position.x)}</span>
-        <span>Y: {Math.round(position.y)}</span>
-        <span>Pasukimas: {Math.round(rotation)}°</span>
+        <span>X: {Math.round(designState.position.x)}</span>
+        <span>Y: {Math.round(designState.position.y)}</span>
+        <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
       {error && (
@@ -223,6 +283,7 @@ export default function DesignCanvas({
 
       <div className="text-sm text-gray-500 text-center">
         <p>Tempkite pele, kad pakeistumėte logotipo poziciją</p>
+        <p>Naudokite slankiklius dydžio ir permatomumo keitimui</p>
       </div>
     </div>
   )

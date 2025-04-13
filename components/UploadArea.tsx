@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, Image as ImageIcon, X, Edit2 } from 'lucide-react'
 import { Button } from './ui/Button'
@@ -15,38 +15,62 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
   const [currentImage, setCurrentImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  const processFile = useCallback((file: File) => {
-    // Reset error state
-    setError(null)
+  const processFile = useCallback(async (file: File) => {
+    try {
+      setError(null)
+      setIsUploading(true)
+      setUploadProgress(0)
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml']
-    if (!validTypes.includes(file.type)) {
-      setError('Netinkamas failo formatas. Galimi formatai: PNG, JPEG, GIF, SVG')
-      return
-    }
-    
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Failas per didelis. Maksimalus dydis yra 5MB')
-      return
-    }
-    
-    // Create a data URL from the file
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      if (dataUrl) {
-        setCurrentImage(dataUrl)
-        onImageUpload(dataUrl)
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml']
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Netinkamas failo formatas. Galimi formatai: PNG, JPEG, GIF, SVG')
       }
+      
+      // Validate file size (3MB max)
+      if (file.size > 3 * 1024 * 1024) {
+        throw new Error('Failas per didelis. Maksimalus dydis yra 3MB')
+      }
+
+      // Create object URL instead of DataURL
+      const objectUrl = URL.createObjectURL(file)
+
+      // Simulate upload progress
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval)
+            return 100
+          }
+          return prev + 10
+        })
+      }, 100)
+
+      // Load image to validate it
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = resolve
+        img.onerror = () => reject(new Error('Nepavyko įkelti paveikslėlio'))
+        img.src = objectUrl
+      })
+
+      setCurrentImage(objectUrl)
+      onImageUpload(objectUrl)
+      
+      // Cleanup
+      clearInterval(interval)
+      setUploadProgress(100)
+      setTimeout(() => setIsUploading(false), 500)
+
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Įvyko klaida įkeliant failą')
+      setIsUploading(false)
+      setUploadProgress(0)
     }
-    reader.onerror = () => {
-      setError('Įvyko klaida nuskaitant failą')
-    }
-    reader.readAsDataURL(file)
   }, [onImageUpload])
   
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -66,22 +90,37 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
   }, [processFile])
 
   const handleRemove = useCallback(() => {
+    if (currentImage && currentImage.startsWith('blob:')) {
+      URL.revokeObjectURL(currentImage)
+    }
     setCurrentImage(null)
     onImageUpload('')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }, [onImageUpload])
+  }, [currentImage, onImageUpload])
 
   const handleEdit = () => {
     setIsEditing(true)
   }
 
   const handleSaveEdit = (editedImageUrl: string) => {
+    if (currentImage && currentImage.startsWith('blob:')) {
+      URL.revokeObjectURL(currentImage)
+    }
     setCurrentImage(editedImageUrl)
     onImageUpload(editedImageUrl)
     setIsEditing(false)
   }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (currentImage && currentImage.startsWith('blob:')) {
+        URL.revokeObjectURL(currentImage)
+      }
+    }
+  }, [currentImage])
   
   return (
     <div className="space-y-4">
@@ -96,11 +135,9 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
           >
             <div className="flex items-start space-x-4">
               <div className="relative w-24 h-24 bg-gray-50 rounded overflow-hidden">
-                <Image
+                <img
                   src={currentImage}
                   alt="Įkeltas paveikslėlis"
-                  width={96}
-                  height={96}
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -173,12 +210,26 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
                 Pasirinkti failą
               </Button>
               <p className="mt-2 text-xs text-gray-500">
-                PNG, JPG, GIF arba SVG (iki 5MB)
+                PNG, JPG, GIF arba SVG (iki 3MB)
               </p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isUploading && (
+        <div className="mt-4">
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-accent-600 h-2.5 rounded-full transition-all duration-300" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-500 mt-1 text-center">
+            {uploadProgress < 100 ? 'Įkeliama...' : 'Apdorojama...'}
+          </p>
+        </div>
+      )}
 
       {error && (
         <motion.div

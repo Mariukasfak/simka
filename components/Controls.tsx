@@ -1,8 +1,7 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { Slider } from '@/components/ui/Slider'
 import { Button } from '@/components/ui/Button'
+import { Slider } from '@/components/ui/Slider'
 import { RefreshCw } from 'lucide-react'
 
 interface ControlsProps {
@@ -76,9 +75,7 @@ export default function Controls({
         </p>
         <ul className="list-disc list-inside space-y-1">
           <li>Tempkite pele norėdami perkelti dizainą</li>
-          <li>Naudokite rodyklių klavišus tikslesniam pozicionavimui</li>
-          <li>Laikykite SHIFT + rodyklės klavišą didesniam žingsniui</li>
-          <li>Spauskite R, kad atstatytumėte poziciją</li>
+          <li>Koreguokite dydį ir permatomumą slankikliais</li>
         </ul>
       </div>
     </div>
