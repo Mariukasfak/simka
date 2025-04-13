@@ -6,7 +6,8 @@ const initialState: DesignState = {
   scale: 1,
   opacity: 1,
   rotation: 0,
-  printArea: 'front'
+  printArea: 'front',
+  confirmed: false
 }
 
 export function useDesignState() {

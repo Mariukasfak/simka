@@ -1,5 +1,3 @@
-'use client'
-
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import html2canvas from 'html2canvas'
@@ -34,48 +32,10 @@ export default function EnhancedDesignCanvas({
   const [isGenerating, setIsGenerating] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const lastPositionRef = useRef(designState.position)
+  const movementThreshold = 2
 
-  // Reset position
-  const handleReset = useCallback(() => {
-    onDesignChange({
-      position: { x: 0, y: 0 },
-      rotation: 0,
-      scale: 1,
-      opacity: 1
-    })
-  }, [onDesignChange])
-
-  // Update position when dragging
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return
-    
-    const movementX = e.movementX
-    const movementY = e.movementY
-    
-    onDesignChange({
-      position: {
-        x: designState.position.x + movementX,
-        y: designState.position.y + movementY
-      }
-    })
-  }, [isDragging, designState.position, onDesignChange])
-
-  // Handle start dragging
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }, [handleMouseMove])
-
-  // Handle stop dragging
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-  }, [handleMouseMove])
-
-  // Generate preview when design elements change
+  // Generate preview with increased debounce time
   const generatePreview = useCallback(
     debounce(async () => {
       if (!canvasRef.current || !uploadedImage) {
@@ -104,23 +64,72 @@ export default function EnhancedDesignCanvas({
       } finally {
         setIsGenerating(false)
       }
-    }, 500),
+    }, 1000), // Increased from 500ms to 1000ms
     [uploadedImage, onPreviewGenerated]
   )
 
-  // Trigger preview generation
-  useEffect(() => {
-    generatePreview()
-    return generatePreview.cancel
-  }, [productImage, uploadedImage, designState, currentView, generatePreview])
+  // Optimized mouse movement handler with threshold
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return
+    
+    const movementX = e.movementX
+    const movementY = e.movementY
+    
+    // Ignore small movements below threshold
+    if (Math.abs(movementX) < movementThreshold && Math.abs(movementY) < movementThreshold) {
+      return
+    }
 
-  // Clean up event listeners
+    const newPosition = {
+      x: lastPositionRef.current.x + movementX,
+      y: lastPositionRef.current.y + movementY
+    }
+    
+    lastPositionRef.current = newPosition
+    
+    onDesignChange({
+      position: newPosition
+    })
+  }, [isDragging, onDesignChange])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    lastPositionRef.current = designState.position
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [handleMouseMove, designState.position])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+    generatePreview()
+  }, [handleMouseMove, generatePreview])
+
+  const handleReset = useCallback(() => {
+    onDesignChange({
+      position: { x: 0, y: 0 },
+      rotation: 0,
+      scale: 1,
+      opacity: 1
+    })
+  }, [onDesignChange])
+
   useEffect(() => {
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      generatePreview.cancel()
     }
-  }, [handleMouseMove, handleMouseUp])
+  }, [handleMouseMove, handleMouseUp, generatePreview])
+
+  // Only trigger preview generation on significant state changes
+  useEffect(() => {
+    if (!isDragging) {
+      generatePreview()
+    }
+  }, [productImage, uploadedImage, designState.scale, designState.opacity, designState.rotation, generatePreview, isDragging])
 
   return (
     <div className="space-y-4">
@@ -263,8 +272,9 @@ export default function EnhancedDesignCanvas({
         )}
         
         {isGenerating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600"></div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-600 mb-2"></div>
+            <span className="text-sm text-accent-600">Generuojama peržiūra...</span>
           </div>
         )}
       </div>
@@ -278,6 +288,33 @@ export default function EnhancedDesignCanvas({
       {error && (
         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md">
           {error}
+        </div>
+      )}
+
+      {uploadedImage && !designState.confirmed && (
+        <Button
+          onClick={() => onDesignChange({ confirmed: true })}
+          variant="primary"
+          className="w-full mt-4"
+        >
+          Patvirtinti dizainą
+        </Button>
+      )}
+
+      {uploadedImage && designState.confirmed && (
+        <div className="bg-green-50 p-3 rounded-lg border border-green-200 text-green-800 flex items-center">
+          <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Dizainas patvirtintas!
+          <Button
+            onClick={() => onDesignChange({ confirmed: false })}
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+          >
+            Redaguoti
+          </Button>
         </div>
       )}
 

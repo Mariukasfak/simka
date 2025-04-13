@@ -136,3 +136,18 @@ input[type="range"]::-moz-range-thumb {
     @apply w-full;
   }
 }
+
+/* Dragging optimizations */
+.dragging {
+  cursor: grabbing !important;
+  transition: none !important;
+  z-index: 100 !important;
+  will-change: transform !important;
+}
+
+.draggable-image {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}

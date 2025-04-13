@@ -1,4 +1,4 @@
-// Add to existing types
+// Print area types
 export type PrintAreaPosition = 'front' | 'back' | 'left-sleeve' | 'right-sleeve';
 
 export interface PrintArea {
@@ -15,16 +15,55 @@ export interface PrintArea {
   };
 }
 
+// Design types
+export interface Design {
+  id: string;
+  imageUrl: string;
+  position: { x: number; y: number };
+  scale: number;
+  opacity: number;
+  rotation: number;
+  printArea: PrintAreaPosition;
+  confirmed: boolean;
+}
+
 export interface DesignState {
   position: { x: number; y: number };
   scale: number;
   opacity: number;
   rotation: number;
   printArea: PrintAreaPosition;
+  confirmed: boolean;
 }
 
-export interface ProductView {
-  position: PrintAreaPosition;
+export interface DesignPosition {
+  x: number;
+  y: number;
+}
+
+// Product types
+export interface Product {
+  id: string;
+  name: string;
   imageUrl: string;
-  printArea: PrintArea;
+  type: 'hoodie' | 'tshirt';
+  color: 'light' | 'dark';
+  price: number;
+}
+
+export interface ProductColor {
+  id: string;
+  name: string;
+  hexCode: string;
+}
+
+// Form types
+export interface OrderFormData {
+  name: string;
+  email: string;
+  phone?: string;
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  quantity: number;
+  comments?: string;
+  printAreas: PrintAreaPosition[];
 }

@@ -1,5 +1,6 @@
 import type { PrintArea, PrintAreaPosition } from './types'
 
+// Spausdinimo vietos
 export const PRINT_AREAS: Record<PrintAreaPosition, PrintArea> = {
   'front': {
     id: 'front',
@@ -55,6 +56,15 @@ export const PRINT_AREAS: Record<PrintAreaPosition, PrintArea> = {
   }
 }
 
+// Galimos spausdinimo vietos pagal produktą
+export const PRODUCT_AVAILABLE_PRINT_AREAS: Record<string, PrintAreaPosition[]> = {
+  'hoodie-dark': ['front', 'back', 'left-sleeve', 'right-sleeve'],
+  'hoodie-light': ['front', 'back'], // Neturi rankovių spausdinimo
+  'tshirt-dark': ['front', 'back'],
+  'tshirt-light': ['front', 'back']
+}
+
+// Produktų vaizdai skirtingoms spausdinimo vietoms
 export const PRODUCT_VIEWS = {
   'hoodie-dark': {
     front: '/images/hoodie_dark_front.png',
@@ -64,8 +74,30 @@ export const PRODUCT_VIEWS = {
   },
   'hoodie-light': {
     front: '/images/hoodie_light_front.png',
-    back: '/images/hoodie_light_back.png',
-    'left-sleeve': '/images/hoodie_light_left.png',
-    'right-sleeve': '/images/hoodie_light_right.png'
+    back: '/images/hoodie_light_back.png'
+  },
+  'tshirt-dark': {
+    front: '/images/tshirt_dark_front.png',
+    back: '/images/tshirt_dark_back.png'
+  },
+  'tshirt-light': {
+    front: '/images/tshirt_light_front.png',
+    back: '/images/tshirt_light_back.png'
   }
+}
+
+// Produkto spalvos
+export const PRODUCT_COLORS = {
+  'hoodie': [
+    { id: 'dark', name: 'Tamsus', hexCode: '#1e293b' },
+    { id: 'light', name: 'Šviesus', hexCode: '#f8fafc' },
+    { id: 'black', name: 'Juodas', hexCode: '#000000' },
+    { id: 'navy', name: 'Tamsiai mėlynas', hexCode: '#172554' }
+  ],
+  'tshirt': [
+    { id: 'dark', name: 'Tamsus', hexCode: '#1e293b' },
+    { id: 'light', name: 'Šviesus', hexCode: '#f8fafc' },
+    { id: 'black', name: 'Juodas', hexCode: '#000000' },
+    { id: 'white', name: 'Baltas', hexCode: '#ffffff' }
+  ]
 }

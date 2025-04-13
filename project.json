@@ -1,0 +1,6 @@
+{
+  "name": "siemka-design-tool",
+  "description": "Interactive web application for creating custom t-shirt and hoodie designs",
+  "template": "node",
+  "tags": ["nextjs", "react", "typescript", "tailwindcss"]
+}
