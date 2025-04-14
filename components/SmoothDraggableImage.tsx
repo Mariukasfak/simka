@@ -83,8 +83,7 @@ export default function SmoothDraggableImage({
     // Iš karto atnaujinkime DOM, kad nebūtų mirkčiojimo
     if (elementRef.current) {
       elementRef.current.style.transform = `
-        translate(-50%, -50%)
-        translate3d(${centerOffset.x}px, ${centerOffset.y}px, 0)
+        translate3d(calc(-50% + ${centerOffset.x}px), calc(-50% + ${centerOffset.y}px), 0)
         scale(${scale})
         rotate(${rotation}deg)
       `;
@@ -142,19 +141,15 @@ export default function SmoothDraggableImage({
     const boundedY = Math.max(bounds.top, Math.min(bounds.bottom, y));
     
     // Tiesiogiai atnaujiname elemento poziciją sklandžiam judėjimui
-    elementRef.current.style.transform = `
-      translate(-50%, -50%)
-      translate3d(${boundedX}px, ${boundedY}px, 0)
-      scale(${scale})
-      rotate(${rotation}deg)
-    `;
+    // Supaprastinta transformacija - naudojame tik translate3d (be translate(-50%, -50%))
+    elementRef.current.style.transform = `translate3d(calc(-50% + ${boundedX}px), calc(-50% + ${boundedY}px), 0) scale(${scale}) rotate(${rotation}deg)`;
     
     // Saugome dabartinę poziciją
     currentPositionRef.current = { x: boundedX, y: boundedY };
     
-    // Ribojame atnaujinimų skaičių
+    // Sumažiname throttling laika sklandesniam judėjimui
     const now = performance.now();
-    if (now - lastUpdateRef.current >= throttleTime) {
+    if (now - lastUpdateRef.current >= 16) { // 16ms ~ 60fps
       onPositionChange({ x: boundedX, y: boundedY });
       lastUpdateRef.current = now;
     }
@@ -329,12 +324,8 @@ export default function SmoothDraggableImage({
     if (!isDragging) {
       currentPositionRef.current = position;
       if (elementRef.current) {
-        elementRef.current.style.transform = `
-          translate(-50%, -50%)
-          translate3d(${position.x}px, ${position.y}px, 0)
-          scale(${scale})
-          rotate(${rotation}deg)
-        `;
+        // Naudojame tą pačią transformacijos sintaksę kaip ir updatePosition
+        elementRef.current.style.transform = `translate3d(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px), 0) scale(${scale}) rotate(${rotation}deg)`;
       }
     }
   }, [position, scale, rotation, isDragging]);
@@ -342,15 +333,15 @@ export default function SmoothDraggableImage({
   return (
     <div
       ref={elementRef}
-      className={`absolute cursor-grab performance-boost draggable-image smooth-transition
-        ${isDragging ? 'cursor-grabbing z-10 dragging active-dragging no-transition' : ''}`}
+      className={`absolute cursor-grab draggable-image ${isDragging ? 'cursor-grabbing z-10 dragging' : 'smooth-transition'}`}
       style={{
-        transform: `translate(-50%, -50%) translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) rotate(${rotation}deg)`,
+        transform: `translate3d(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px), 0) scale(${scale}) rotate(${rotation}deg)`,
         opacity,
         transformOrigin: 'center',
         touchAction: 'none',
         top: '50%',
-        left: '50%'
+        left: '50%',
+        willChange: isDragging ? 'transform' : 'auto'
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
@@ -366,11 +357,11 @@ export default function SmoothDraggableImage({
           
           // Kai vaizdas įkeltas, nustatome pradinę poziciją
           if (!firstLoadCompleted.current && containerRef.current && printAreaRef?.current) {
-            // Uždelskime truputį, kad įsitikintume, jog DOM atnaujintas
-            setTimeout(() => {
+            // Sumažiname delsą, kad greičiau nustatytų
+            requestAnimationFrame(() => {
               updateBounds();
               setInitialPosition();
-            }, 50);
+            });
           }
         }}
       />
