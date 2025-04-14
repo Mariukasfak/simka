@@ -104,7 +104,7 @@ export default function ProductsPage() {
           Susisiekite su mumis dėl individualių užsakymų ar didesnių kiekių
         </p>
         <Link
-          href="/contact"
+          href="/"
           className="btn btn-outline"
         >
           Susisiekti
