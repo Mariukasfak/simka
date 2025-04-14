@@ -5,4 +5,12 @@
 // Jei reikia atstatyti senesnę React + Vite versiją, žiūrėkite į projekto istoriją.
 // Šiuo metu visa funkcionalumas yra perkeltas į app/ direktoriją (Next.js).
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+// Importai pašalinti, nes jie sukelia klaidas diegimo metu
+// import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+
+const App = () => {
+  // Šis komponentas nebenaudojamas, todėl grąžiname tuščią elementą
+  return <div>App no longer in use - migrated to Next.js</div>;
+}
+
+export default App;
