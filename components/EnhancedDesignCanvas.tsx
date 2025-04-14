@@ -45,34 +45,50 @@ export default function EnhancedDesignCanvas({
 
       try {
         previewInProgressRef.current = true;
-        setIsGenerating(true)
-        setError(null)
+        // Įjungiame generavimo indikatorių tik jei ilgiau nei 500ms
+        const indicatorTimeout = setTimeout(() => {
+          setIsGenerating(true);
+        }, 500);
+        
+        setError(null);
         
         const canvas = await html2canvas(canvasRef.current, {
           backgroundColor: null,
-          scale: 2,
+          scale: 1.5, // Sumažinome iš 2 į 1.5, kad būtų mažiau apkraunantis
           logging: false,
           useCORS: true,
           allowTaint: true
-        })
+        });
         
-        const preview = canvas.toDataURL('image/jpeg', 0.9)
-        onPreviewGenerated(preview)
+        const preview = canvas.toDataURL('image/jpeg', 0.8); // Sumažinome kokybę iš 0.9 į 0.8
+        onPreviewGenerated(preview);
+        
+        clearTimeout(indicatorTimeout);
       } catch (error) {
-        console.error('Peržiūros generavimo klaida:', error)
-        setError('Nepavyko sugeneruoti peržiūros')
-        onPreviewGenerated(null)
+        console.error('Peržiūros generavimo klaida:', error);
+        setError('Nepavyko sugeneruoti peržiūros');
+        onPreviewGenerated(null);
       } finally {
-        setIsGenerating(false)
+        setIsGenerating(false);
         previewInProgressRef.current = false;
       }
-    }, 1000),
+    }, 2000), // Padidinome laiką iš 1000ms į 2000ms - dabar ši funkcija bus kviečiama rečiau
     [uploadedImage, onPreviewGenerated]
   )
 
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
+    // Tiesiog atnaujinome poziciją be papildomo peržiūros generavimo
     onDesignChange({ position: newPosition })
   }, [onDesignChange])
+
+  // Šį funkcija naudojame kai reikia sugeneruoti peržiūrą pasibaigus vilkimui
+  const handlePositionChangeEnd = useCallback((newPosition: { x: number, y: number }) => {
+    onDesignChange({ position: newPosition })
+    // Peržiūrą generuojame tik kartą po pozicijos pasikeitimo
+    setTimeout(() => {
+      generatePreview()
+    }, 100)
+  }, [onDesignChange, generatePreview])
 
   // Tikslaus spausdinimo zonos centro skaičiavimas
   const calculatePrintAreaCenterOffset = useCallback(() => {
@@ -295,6 +311,7 @@ export default function EnhancedDesignCanvas({
             opacity={designState.opacity}
             rotation={designState.rotation}
             onPositionChange={handlePositionChange}
+            onPositionChangeEnd={handlePositionChangeEnd}
             containerRef={canvasRef}
             printAreaRef={printAreaRef}
           />

@@ -8,6 +8,7 @@ interface SmoothDraggableImageProps {
   opacity: number
   rotation: number
   onPositionChange: (position: DesignPosition) => void
+  onPositionChangeEnd?: (position: DesignPosition) => void
   containerRef: React.RefObject<HTMLDivElement>
   printAreaRef?: React.RefObject<HTMLDivElement>
 }
@@ -19,6 +20,7 @@ export default function SmoothDraggableImage({
   opacity,
   rotation,
   onPositionChange,
+  onPositionChangeEnd,
   containerRef,
   printAreaRef
 }: SmoothDraggableImageProps) {
@@ -32,7 +34,7 @@ export default function SmoothDraggableImage({
   const currentPositionRef = useRef(position)
   const rafRef = useRef<number>()
   const lastUpdateRef = useRef<number>(0)
-  const throttleTime = 16 // ~60fps
+  const throttleTime = 50 // Padidintas intervalas sklandesniam tempimui (buvo 16ms)
   const firstLoadCompleted = useRef(false)
   const imageLoadedRef = useRef(false)
 
@@ -46,15 +48,16 @@ export default function SmoothDraggableImage({
     const container = containerRef.current.getBoundingClientRect();
     const printArea = printAreaRef.current.getBoundingClientRect();
     
-    // Konvertuojame printArea koordinates į konteinerio vidaus koordinates
-    const printAreaCenterX = printArea.left - container.left + printArea.width / 2;
-    const printAreaCenterY = printArea.top - container.top + printArea.height / 2;
+    // Spausdinimo zonos centro koordinatės konteinerio atžvilgiu
+    const printAreaCenterX = (printArea.left - container.left) + (printArea.width / 2);
+    const printAreaCenterY = (printArea.top - container.top) + (printArea.height / 2);
     
-    // Apskaičiuojame atstumą nuo konteinerio centro iki printArea centro
+    // Konteinerio centro koordinatės
     const containerCenterX = container.width / 2;
     const containerCenterY = container.height / 2;
     
-    // Grąžiname poslinkį, reikalingą patalpinti elementą printArea centre
+    // Atstumai nuo konteinerio centro iki spausdinimo zonos centro
+    // Tai ir yra mūsų poslinkio vektorius, kad paveikslėlis būtų spausdinimo zonos centre
     return {
       x: printAreaCenterX - containerCenterX,
       y: printAreaCenterY - containerCenterY
@@ -66,6 +69,7 @@ export default function SmoothDraggableImage({
     // Jei jau nustatyta, nebenustatom
     if (firstLoadCompleted.current) return;
     
+    // Gaukime tikslią spausdinimo zonos centro poziciją
     const centerOffset = getExactPrintAreaCenter();
     console.log("Setting initial position:", centerOffset);
     
@@ -206,7 +210,10 @@ export default function SmoothDraggableImage({
     
     // Galutinis pozicijos atnaujinimas
     onPositionChange(currentPositionRef.current);
-  }, [onPositionChange]);
+    if (onPositionChangeEnd) {
+      onPositionChangeEnd(currentPositionRef.current);
+    }
+  }, [onPositionChange, onPositionChangeEnd]);
 
   // Lietimo įvykių valdikliai
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -259,7 +266,10 @@ export default function SmoothDraggableImage({
     }
     
     onPositionChange(currentPositionRef.current);
-  }, [onPositionChange]);
+    if (onPositionChangeEnd) {
+      onPositionChangeEnd(currentPositionRef.current);
+    }
+  }, [onPositionChange, onPositionChangeEnd]);
 
   // Patikrinkime ribas ir atnaujiname jas, kai pasikeičia elementai
   useEffect(() => {
@@ -336,7 +346,9 @@ export default function SmoothDraggableImage({
         transform: `translate(-50%, -50%) translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) rotate(${rotation}deg)`,
         opacity,
         transformOrigin: 'center',
-        touchAction: 'none'
+        touchAction: 'none',
+        top: '50%',
+        left: '50%'
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
