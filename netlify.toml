@@ -1,3 +1,5 @@
+# Netlify konfigūracija projektui
+
 [build]
   command = "npm run fast-build"
   publish = ".next"
@@ -6,7 +8,7 @@
   NEXT_PUBLIC_SITE_URL = "https://siemka-design-tool.netlify.app"
   NODE_OPTIONS = "--max-http-header-size=16384"
   # Išvengiame URL problemų, užtikrinant, kad serverio pusėje būtų tinkamos URL nuorodos
-  NEXT_PUBLIC_VERCEL_URL = "${NEXT_PUBLIC_SITE_URL}"
+  NEXT_PUBLIC_VERCEL_URL = "https://siemka-design-tool.netlify.app"
   NEXT_TELEMETRY_DISABLED = "1"
   # Pagreitinimas
   NEXT_IGNORE_ESM_CACHE = "true"
@@ -15,22 +17,20 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Pridedame cache konfigūraciją paspartinimui
 [[plugins]]
   package = "netlify-plugin-cache-nextjs"
-
-# Naudojame mūsų lokalų optimizavimo plėtinį
-[[plugins]]
-  package = "/netlify/plugins/nextjs-optimizer"
-
-# Pridedame cache direktyvą
-[[plugins.inputs]]
+  
+  [plugins.inputs]
   include = [
     ".next/cache/**",
     "node_modules/.cache/**"
   ]
 
-# Pridedame serverio funkcijų konfigūraciją geresniam URL valdymui
+# Naudojame lokalų optimizavimo plėtinį
+[[plugins]]
+  package = "/opt/build/repo/netlify/plugins/nextjs-optimizer"
+
+# Pridedame serverio funkcijų konfigūraciją
 [functions]
   node_bundler = "esbuild"
   included_files = ["**/*.ts"]
@@ -42,8 +42,9 @@
   status = 200
   force = true
 
-# Pridedame cache antraštės
+# Pridedame cache antraštes
 [[headers]]
   for = "/*"
+  
   [headers.values]
     Cache-Control = "public, max-age=31536000, s-maxage=31536000, immutable"
