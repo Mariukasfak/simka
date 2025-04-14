@@ -5,6 +5,7 @@ import UploadArea from './UploadArea';
 import EnhancedDesignCanvas from './EnhancedDesignCanvas';
 import EnhancedOrderForm from './EnhancedOrderForm';
 import { Product, PrintAreaPosition } from '@/lib/types';
+import { PRODUCT_VIEWS } from '@/lib/constants';
 
 interface WizardContentProps {
   currentStep: WizardStep;
@@ -102,10 +103,10 @@ export default function WizardContent({
   
   // Dizaino redagavimo žingsnis
   const renderDesignStep = () => {
-    // Gauname dabartinio produkto vaizdą
-    const views = (window as any).PRODUCT_VIEWS?.[selectedProduct.id];
+    // Gauname dabartinio produkto vaizdą iš importuoto PRODUCT_VIEWS
+    const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS] || {};
     const currentProductImage = views && currentView in views 
-      ? views[currentView] 
+      ? views[currentView as keyof typeof views] 
       : selectedProduct.imageUrl;
     
     return (

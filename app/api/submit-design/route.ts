@@ -61,100 +61,126 @@ export async function POST(request: Request) {
       <p>Šis laiškas sugeneruotas automatiškai iš susikurk.siemka.lt platformos.</p>
     `;
     
-    // Configure nodemailer with fallback options
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER || 'smtp.gmail.com',
-      port: Number(process.env.EMAIL_PORT) || 587,
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'your-app-password',
-      },
-    });
+    // Bandome išsaugoti užsakymą į duomenų bazę
+    let userId = null;
     
-    // Set recipient email with fallback to info@siemka.lt
-    const recipientEmail = process.env.EMAIL_TO || "info@siemka.lt";
-    
-    // Send email with all designs as attachments
     try {
+      // Supabase cookies() turi būti async apdoroti
+      const cookiesStore = cookies();
+      const supabase = createRouteHandlerClient({ cookies: () => cookiesStore });
+      
+      // Gauname vartotojo sesiją
+      const { data: { session } } = await supabase.auth.getSession();
+      userId = session?.user?.id || null;
+
+      // Išsaugome užsakymą duomenų bazėje
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        const { error: dbError } = await supabase
+          .from('orders')
+          .insert({
+            user_id: userId,
+            customer_name: validatedData.name,
+            customer_email: validatedData.email,
+            customer_phone: validatedData.phone,
+            product_type: data.product.type,
+            product_variant: data.product.id,
+            product_name: data.product.name,
+            design_previews: data.designPreviews || {},
+            design_states: data.designStates || {},
+            quantity: validatedData.quantity,
+            size: validatedData.size,
+            comments: validatedData.comments,
+            total_price: data.totalPrice,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          });
+
+        if (dbError) {
+          console.error('Error saving to database:', dbError);
+          // Pratęsiame vykdymą, net jei ir nepavyksta išsaugoti DB
+        }
+      } else {
+        console.warn('Missing Supabase configuration - skipping database save');
+      }
+    } catch (dbError) {
+      console.error('Database error details:', dbError);
+      // Pratęsiame vykdymą, el. pašto siuntimas svarbesnis
+    }
+    
+    // Bandome siųsti el. laišką
+    try {
+      // Sukonfigūruojame nodemailer tik su būtinais parametrais
+      const transporter = nodemailer.createTransport({
+        service: 'gmail', // Naudojame 'service' vietoje 'host'/'port'
+        auth: {
+          user: process.env.EMAIL_USER || 'your-email@gmail.com',
+          pass: process.env.EMAIL_PASSWORD || 'your-app-password',
+        },
+        // Nustatome didesnius timeout parametrus
+        connectionTimeout: 10000, // 10 sekundžių
+        socketTimeout: 20000, // 20 sekundžių
+        secure: false,
+        tls: {
+          rejectUnauthorized: false // Lokaliam testavimui
+        }
+      });
+      
+      // Nustatome gavėjo el. paštą su numatyta reikšme
+      const recipientEmail = process.env.EMAIL_TO || "info@siemka.lt";
+
+      // Sudarome priedų sąrašą
+      const attachments = Object.entries(data.designPreviews || {})
+        .filter(([_, url]) => url)
+        .map(([area, url]) => {
+          const areaNames: Record<string, string> = {
+            'front': 'Priekis',
+            'back': 'Nugara',
+            'left-sleeve': 'Kairė rankovė',
+            'right-sleeve': 'Dešinė rankovė'
+          };
+          return {
+            filename: `design-${areaNames[area as string] || area}.jpg`,
+            path: url as string,
+            encoding: 'base64',
+          };
+        });
+      
+      // Siunčiame el. laišką
       await transporter.sendMail({
         from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "noreply@siemka.lt"}>`,
         to: recipientEmail,
         subject: `Naujas dizaino užsakymas - ${validatedData.name}`,
         html: emailHtml,
-        attachments: Object.entries(data.designPreviews || {})
-          .filter(([_, url]) => url)
-          .map(([area, url]) => {
-            const areaNames: Record<string, string> = {
-              'front': 'Priekis',
-              'back': 'Nugara',
-              'left-sleeve': 'Kairė rankovė',
-              'right-sleeve': 'Dešinė rankovė'
-            };
-            return {
-              filename: `design-${areaNames[area as string] || area}.jpg`,
-              path: url as string,
-              encoding: 'base64',
-            };
-          }),
+        attachments: attachments,
       });
+      
       console.log(`Email sent successfully to ${recipientEmail}`);
     } catch (emailError) {
       console.error('Email sending error:', emailError);
-      // Continue with saving to database even if email fails
+      // Tęsiame vykdymą, net jei el. paštas nepavyko
+      
+      // Alternatyvus el. pašto siuntimas per kitas bibliotekas būtų čia
     }
     
-    // Get user session
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-    
-    try {
-      // Save order to database with proper types
-      const { error: dbError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userId, // Pridėtas vartotojo ID, jei prisijungęs
-          customer_name: validatedData.name,
-          customer_email: validatedData.email,
-          customer_phone: validatedData.phone,
-          product_type: data.product.type, // String, pvz.: 'hoodie', 'tshirt'
-          product_variant: data.product.id, // String, pvz.: 'hoodie-light'
-          product_name: data.product.name, // String
-          design_previews: data.designPreviews, // Tiesiogiai kaip JSON
-          design_states: data.designStates, // Visų pozicijų dizaino būsenos kaip JSON
-          quantity: validatedData.quantity,
-          size: validatedData.size,
-          comments: validatedData.comments,
-          total_price: data.totalPrice,
-          status: 'pending', // Pradinis užsakymo statusas
-          created_at: new Date().toISOString(),
-        });
-
-      if (dbError) {
-        console.error('Error saving to database:', dbError);
-        throw dbError;
-      }
-    } catch (dbError) {
-      console.error('Database error details:', dbError);
-      // Continue with success response even if database save fails
-      // Email notification is more important in this case
-    }
-    
-    return NextResponse.json({ success: true });
+    // Nesvarbu ar pavyko išsiųsti el. paštą ar išsaugoti duomenų bazėje,
+    // grąžiname sėkmingą atsakymą vartotojui
+    return NextResponse.json({ 
+      success: true,
+      message: "Užsakymas priimtas. Susisieksime su jumis artimiausiu metu."
+    });
   } catch (error) {
     console.error('Error processing order:', error);
     
     // Grąžinkime informatyvesnę klaidą, jei tai validacijos klaida
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.format() },
+        { error: 'Validacijos klaida', details: error.format() },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Failed to process order', details: String(error) },
+      { error: 'Įvyko klaida apdorojant užsakymą', details: String(error) },
       { status: 500 }
     );
   }
