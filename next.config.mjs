@@ -35,8 +35,6 @@ const nextConfig = {
   output: 'standalone',
   // Netlify diegimui reikalingi nustatymai
   trailingSlash: false,
-  // Teisingas metaduomenų bazinio URL nustatymas
-  assetPrefix: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 }
 
 export default nextConfig
