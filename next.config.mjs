@@ -15,14 +15,11 @@ const nextConfig = {
     ],
     unoptimized: false // Įjungiame optimizaciją, tai pagerina svetainės veikimą
   },
-  // Visada naudojame SWC, nes tai greičiau nei Babel
-  swcMinify: true,
   
   // Šie nustatymai gerina svetainės veikimą
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
-  optimizeFonts: true,
   
   // Racionalesnis statinių puslapių generavimo laikas
   staticPageGenerationTimeout: 120,
@@ -52,12 +49,12 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb', // Padidintas dydis nuotraukoms
     },
-    serverComponentsExternalPackages: [], // Nurodome išorinius paketus, kurie turi būti vykdomi serveryje
-    esmExternals: 'loose', // Pagerina suderinamumą su ESM moduliais
-    appDir: true, // Įgalina app/ direktoriją
     typedRoutes: true, // Tipizuoti maršrutai
     forceSwcTransforms: true, // Užtikrina, kad SWC transformacijos būtų naudojamos visur
   },
+  
+  // Išoriniai paketai, kurie turi būti vykdomi serveryje (perkelta iš serverComponentsExternalPackages)
+  serverExternalPackages: [],
 }
 
 export default nextConfig
