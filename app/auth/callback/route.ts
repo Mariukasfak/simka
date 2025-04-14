@@ -4,17 +4,25 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   try {
-    const requestUrl = new URL(request.url)
-    const code = requestUrl.searchParams.get('code')
+    let requestUrl;
+    let code: string | null = null;
+    
+    try {
+      requestUrl = new URL(request.url)
+      code = requestUrl.searchParams.get('code')
+    } catch (urlError) {
+      console.error('Error parsing request URL:', urlError)
+      // Tęsiame su code = null
+    }
 
     if (code) {
       const supabase = createRouteHandlerClient({ cookies })
       await supabase.auth.exchangeCodeForSession(code)
     }
 
-    // Apsaugo nuo "Invalid URL" klaidos, jei origin būtų undefined
-    const origin = requestUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    return NextResponse.redirect(origin)
+    // Naudojame saugią nuorodą grąžinimui
+    const safeRedirectUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    return NextResponse.redirect(safeRedirectUrl)
   } catch (error) {
     console.error('URL handling error:', error)
     // Nukreipia į pagrindinį puslapį klaidos atveju

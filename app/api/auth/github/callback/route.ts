@@ -60,16 +60,10 @@ export async function GET(request: Request) {
       )
     }
 
-    // Redirect to success page - saugesnis būdas
-    try {
-      const baseUrl = new URL(request.url).origin
-      return NextResponse.redirect(`${baseUrl}/github/success`)
-    } catch (urlError) {
-      console.error('Error creating redirect URL:', urlError)
-      // Fallback nukreipimas
-      const fallbackUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-      return NextResponse.redirect(`${fallbackUrl}/github/success`)
-    }
+    // Naudojame tiesioginį peradresavimą be new URL objekto kūrimo
+    const safeRedirectUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    return NextResponse.redirect(`${safeRedirectUrl}/github/success`)
+    
   } catch (error) {
     console.error('GitHub callback error:', error)
     return NextResponse.json(
