@@ -5,8 +5,18 @@ import { getGitHubAccessToken, getGitHubUser } from '@/lib/github'
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const code = searchParams.get('code')
+    // Saugiau gauti URL parametrus
+    let code: string | null = null;
+    try {
+      const { searchParams } = new URL(request.url)
+      code = searchParams.get('code')
+    } catch (urlError) {
+      console.error('Error parsing URL:', urlError)
+      return NextResponse.json(
+        { error: 'Invalid request URL' },
+        { status: 400 }
+      )
+    }
 
     if (!code) {
       return NextResponse.json(
@@ -50,8 +60,16 @@ export async function GET(request: Request) {
       )
     }
 
-    // Redirect to success page
-    return NextResponse.redirect(new URL('/github/success', request.url))
+    // Redirect to success page - saugesnis būdas
+    try {
+      const baseUrl = new URL(request.url).origin
+      return NextResponse.redirect(`${baseUrl}/github/success`)
+    } catch (urlError) {
+      console.error('Error creating redirect URL:', urlError)
+      // Fallback nukreipimas
+      const fallbackUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      return NextResponse.redirect(`${fallbackUrl}/github/success`)
+    }
   } catch (error) {
     console.error('GitHub callback error:', error)
     return NextResponse.json(
