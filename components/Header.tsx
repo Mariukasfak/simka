@@ -57,13 +57,13 @@ export default function Header() {
               Produktai
             </Link>
             <Link 
-              href="/about" 
+              href={{ pathname: '/about' }}
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Apie mus
             </Link>
             <Link 
-              href="/contact" 
+              href={{ pathname: '/contact' }}
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Kontaktai
@@ -76,7 +76,7 @@ export default function Header() {
             ) : isLoggedIn ? (
               <div className="flex space-x-4">
                 <Link
-                  href="/account"
+                  href={{ pathname: '/account' }}
                   className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
                 >
                   Mano paskyra
