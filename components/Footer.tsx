@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Route } from 'next'
 
 export default function Footer() {
   return (
@@ -31,12 +32,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="text-base text-gray-500 hover:text-brand-primary">
+                <Link href={"/about" as Route} className="text-base text-gray-500 hover:text-brand-primary">
                   Apie mus
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-base text-gray-500 hover:text-brand-primary">
+                <Link href={"/contact" as Route} className="text-base text-gray-500 hover:text-brand-primary">
                   Kontaktai
                 </Link>
               </li>
