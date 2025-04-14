@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       <p>${validatedData.comments || 'Nėra'}</p>
       
       <p><strong>Dizaino peržiūros:</strong></p>
-      <p>Dizaino peržiūros yra pridėtos kaip priedai (attachments).</p>
+      <p>Dizaino peržiūros yra pridėtos kaip priedai (attachments). Originali logotipo versija taip pat pridėta.</p>
       
       <p>Šis laiškas sugeneruotas automatiškai iš susikurk.siemka.lt platformos.</p>
     `;
@@ -93,6 +93,8 @@ export async function POST(request: Request) {
             total_price: data.totalPrice,
             status: 'pending',
             created_at: new Date().toISOString(),
+            // Išsaugome originalų logotipą
+            original_logo: data.uploadedImage || null,
           });
 
         if (dbError) {
@@ -127,7 +129,7 @@ export async function POST(request: Request) {
       // Nustatome gavėjo el. paštą su numatyta reikšme
       const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
 
-      // Sudarome priedų sąrašą
+      // Sudarome priedų sąrašą - dabar naudojame PNG formatą, kad išsaugotume permatomumą
       const attachments = Object.entries(data.designPreviews || {})
         .filter(([_, url]) => url)
         .map(([area, url]) => {
@@ -138,11 +140,22 @@ export async function POST(request: Request) {
             'right-sleeve': 'Dešinė rankovė'
           };
           return {
-            filename: `design-${areaNames[area as string] || area}.jpg`,
+            filename: `design-${areaNames[area as string] || area}.png`,
             path: url as string,
             encoding: 'base64',
+            contentType: 'image/png'
           };
         });
+      
+      // Pridedame originalų logotipą kaip priedą
+      if (data.uploadedImage) {
+        attachments.push({
+          filename: 'original-logo.png',
+          path: data.uploadedImage,
+          encoding: 'base64',
+          contentType: 'image/png'
+        });
+      }
       
       // Siunčiame el. laišką
       await transporter.sendMail({

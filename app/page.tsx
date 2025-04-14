@@ -159,6 +159,7 @@ function HomeContent() {
         ...formData,
         product: selectedProduct,
         designPreviews,
+        uploadedImage, // Pridedame originalų logotipą
         designStates: getAllDesignStates(), // Naudojame visų pozicijų dizaino būsenas
         totalPrice: selectedProduct.price * formData.quantity,
         printAreas: Object.keys(PRINT_AREAS).filter(area => designPreviews[area] !== null)
@@ -193,7 +194,7 @@ function HomeContent() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [designPreviews, designState, getAllDesignStates, resetDesignState, resetPreviews, selectedProduct]);
+  }, [designPreviews, uploadedImage, getAllDesignStates, resetDesignState, resetPreviews, selectedProduct]);
 
   // Pereiname į kitą žingsnį
   const handleNextStep = useCallback(() => {

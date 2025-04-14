@@ -39,6 +39,7 @@ export default function EnhancedDesignCanvas({
   const initialLoadCompleted = useRef(false)
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
   const skipStateUpdateRef = useRef(false)
+  const positionUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Optimizuotas peržiūros generavimas
   const generatePreview = useCallback(
@@ -64,7 +65,7 @@ export default function EnhancedDesignCanvas({
           allowTaint: true
         });
         
-        // Išsaugome vaizdą originaliu formatu, kad išlaikytų permatomumą
+        // Išsaugome vaizdą PNG formatu, kad išlaikytų permatomumą
         const preview = canvas.toDataURL('image/png', 0.9);
         onPreviewGenerated(preview);
         
@@ -92,14 +93,22 @@ export default function EnhancedDesignCanvas({
     if (showInitialTooltip) {
       setShowInitialTooltip(false);
     }
-    
-    // Atnaujiniame poziciją tik jei tikrai reikalinga
-    if (
-      designState.position.x !== newPosition.x || 
-      designState.position.y !== newPosition.y
-    ) {
-      onDesignChange({ position: newPosition });
+
+    // Atšaukiame ankstesnį timeout, jei toks buvo
+    if (positionUpdateTimeoutRef.current) {
+      clearTimeout(positionUpdateTimeoutRef.current);
     }
+    
+    // Atnaujiniame poziciją tik jei tikrai reikalinga, su stabilizavimo delsa
+    positionUpdateTimeoutRef.current = setTimeout(() => {
+      if (
+        designState.position.x !== newPosition.x || 
+        designState.position.y !== newPosition.y
+      ) {
+        onDesignChange({ position: newPosition });
+      }
+      positionUpdateTimeoutRef.current = null;
+    }, 50);
   }, [onDesignChange, showInitialTooltip, designState.position.x, designState.position.y]);
 
   // Šį funkcija naudojame kai reikia sugeneruoti peržiūrą pasibaigus vilkimui
@@ -168,7 +177,10 @@ export default function EnhancedDesignCanvas({
   // Valymas sunaikinant komponentą
   useEffect(() => {
     return () => {
-      generatePreview.cancel()
+      generatePreview.cancel();
+      if (positionUpdateTimeoutRef.current) {
+        clearTimeout(positionUpdateTimeoutRef.current);
+      }
     }
   }, [generatePreview]);
 
@@ -380,6 +392,7 @@ export default function EnhancedDesignCanvas({
               onPositionChangeEnd={handlePositionChangeEnd}
               containerRef={canvasRef}
               printAreaRef={printAreaRef}
+              currentView={currentView} // Perduodame dabartinį vaizdą į SmoothDraggableImage
             />
             
             {/* Pradinis patarimas kaip redaguoti dizainą */}
