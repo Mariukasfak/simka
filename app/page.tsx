@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import Image from 'next/image'
 import ProductSelector from '@/components/ProductSelector'
 import UploadArea from '@/components/UploadArea'
 import EnhancedDesignCanvas from '@/components/EnhancedDesignCanvas'
 import EnhancedOrderForm from '@/components/EnhancedOrderForm'
+import DesignWizard, { WizardStep } from '@/components/DesignWizard'
+import WizardContent from '@/components/WizardContent'
 import { useDesignState } from '@/lib/hooks/useDesignState'
 import { PRINT_AREAS, PRODUCT_VIEWS } from '@/lib/constants'
 import { toast } from 'react-hot-toast'
@@ -20,6 +21,8 @@ function HomeContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showDesignTool, setShowDesignTool] = useState(false)
+  const [hasDesignedProduct, setHasDesignedProduct] = useState(false)
+  const [currentWizardStep, setCurrentWizardStep] = useState<WizardStep>('product')
   
   // Design state management
   const {
@@ -133,6 +136,11 @@ function HomeContent() {
       ...prev,
       [currentView]: preview
     }))
+    
+    // If a preview was generated, mark that user has designed something
+    if (preview) {
+      setHasDesignedProduct(true)
+    }
   }, [currentView]);
 
   // Optimizuota versija su POST į API
@@ -175,6 +183,8 @@ function HomeContent() {
       setUploadedImage(null)
       resetDesignState()
       setDesignPreviews(resetPreviews())
+      setCurrentWizardStep('product')
+      setHasDesignedProduct(false)
     } catch (error) {
       console.error('Error submitting order:', error)
       toast.error(error instanceof Error ? error.message : 'Įvyko klaida siunčiant užklausą')
@@ -182,6 +192,18 @@ function HomeContent() {
       setIsSubmitting(false)
     }
   }, [designPreviews, designState, resetDesignState, resetPreviews, selectedProduct]);
+
+  // Pereiname į kitą žingsnį
+  const handleNextStep = useCallback(() => {
+    setCurrentWizardStep(prevStep => {
+      switch (prevStep) {
+        case 'product': return 'upload';
+        case 'upload': return 'design';
+        case 'design': return 'order';
+        default: return prevStep;
+      }
+    });
+  }, []);
 
   // Handler for CTA button click
   const handleStartDesigning = () => {
@@ -205,13 +227,10 @@ function HomeContent() {
     )
   }
 
-  // Get current product view image - PATAISYTA
-  const currentProductImage = (() => {
-    const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS]
-    return views && currentView in views ? 
-      views[currentView as keyof typeof views] : 
-      selectedProduct.imageUrl
-  })();
+  // Make PRODUCT_VIEWS globally available for the wizard
+  if (typeof window !== 'undefined') {
+    (window as any).PRODUCT_VIEWS = PRODUCT_VIEWS;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -225,118 +244,93 @@ function HomeContent() {
             Įkelk savo logotipą, uždėk jį ant rūbo ir gauk pasiūlymą per kelias minutes
           </p>
           
-          {/* Pataisytas CTA mygtukas - aiškiai matomas ir ryškus */}
-          <button 
-            onClick={handleStartDesigning}
-            className="px-8 py-4 bg-brand-primary text-white text-lg font-bold rounded-lg shadow-lg hover:bg-brand-secondary transition-colors inline-flex items-center justify-center"
-            style={{ minWidth: '220px' }}
-          >
-            Pradėti kurti dizainą
-          </button>
+          {!showDesignTool && (
+            <>
+              {/* Pataisytas CTA mygtukas - aiškiai matomas ir ryškus */}
+              <button 
+                onClick={handleStartDesigning}
+                className="px-8 py-4 bg-accent-600 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-accent-700 transition-colors inline-flex items-center justify-center"
+                style={{ minWidth: '220px' }}
+              >
+                Pradėti kurti dizainą
+              </button>
 
-          <div className="mt-10 flex justify-center space-x-8">
-            <div className="relative w-48 h-64 bg-gray-100 rounded-lg overflow-hidden shadow-md">
-              <Image 
-                src="/images/tshirt_light.png" 
-                alt="Marškinėliai su logotipu" 
-                width={192} 
-                height={256} 
-                className="object-cover"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-md">
+              <div className="mt-10 flex justify-center space-x-8">
+                <div className="relative w-48 h-64 bg-gray-100 rounded-lg overflow-hidden shadow-md">
                   <Image 
-                    src="/images/logo.svg" 
-                    alt="Logotipas ant marškinėlių" 
-                    width={50} 
-                    height={50}
+                    src="/images/tshirt_light.png" 
+                    alt="Marškinėliai su logotipu" 
+                    width={192} 
+                    height={256} 
+                    className="object-cover"
                   />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-md">
+                      <Image 
+                        src="/images/logo.svg" 
+                        alt="Logotipas ant marškinėlių" 
+                        width={50} 
+                        height={50}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="relative w-48 h-64 bg-gray-100 rounded-lg overflow-hidden shadow-md">
+                  <Image 
+                    src="/images/hoodie_dark.png" 
+                    alt="Džemperis su logotipu" 
+                    width={192} 
+                    height={256} 
+                    className="object-cover" 
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-md">
+                      <Image 
+                        src="/images/logo.svg" 
+                        alt="Logotipas ant džemperio" 
+                        width={50} 
+                        height={50} 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative w-48 h-64 bg-gray-100 rounded-lg overflow-hidden shadow-md">
-              <Image 
-                src="/images/hoodie_dark.png" 
-                alt="Džemperis su logotipu" 
-                width={192} 
-                height={256} 
-                className="object-cover" 
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-md">
-                  <Image 
-                    src="/images/logo.svg" 
-                    alt="Logotipas ant džemperio" 
-                    width={50} 
-                    height={50} 
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Dizaino įrankis - rodomas tik kai showDesignTool = true */}
+      {/* Dizaino įrankis su vedliu - rodomas tik kai showDesignTool = true */}
       {showDesignTool && (
-        <div id="design-tool" className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-8 border-t border-gray-200 mt-8">
-          <h2 className="text-2xl font-bold mb-6 col-span-full">Kurkite savo dizainą</h2>
+        <div id="design-tool" className="bg-gray-50 p-6 rounded-lg shadow-sm">
+          <h2 className="text-2xl font-bold mb-6">Sukurkite savo dizainą</h2>
           
-          <div className="space-y-8">
-            <ProductSelector
-              products={products}
-              selectedProduct={selectedProduct}
-              onSelect={handleProductSelect}
-            />
-            
-            <UploadArea onImageUpload={handleImageUpload} />
-            
-            {uploadedImage && (
-              <div className="bg-white p-4 rounded-lg shadow-sm">
-                <h2 className="text-lg font-medium mb-4">Dizaino pozicijos</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(PRINT_AREAS).map(([position, area]) => (
-                    <button
-                      key={position}
-                      onClick={() => setCurrentView(position as any)}
-                      className={`p-3 rounded-lg text-center transition ${
-                        currentView === position 
-                          ? 'bg-accent-100 border border-accent-300'
-                          : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="text-sm font-medium">{area.name}</div>
-                      {designPreviews[position] && (
-                        <div className="text-xs text-green-600 mt-1">✓ Pridėta</div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <EnhancedOrderForm
-              onSubmit={handleOrderSubmit}
-              isSubmitting={isSubmitting}
-              disabled={!uploadedImage}
-              designPreviews={designPreviews}
-              printAreas={Object.keys(PRINT_AREAS) as any[]}
-              productPrice={selectedProduct.price}
-            />
-          </div>
-
-          <div>
-            <EnhancedDesignCanvas
-              productImage={currentProductImage}
-              uploadedImage={uploadedImage}
-              designState={designState}
-              onDesignChange={updateDesignState}
-              onPreviewGenerated={handlePreviewGenerated}
-              printAreas={PRINT_AREAS}
-              currentView={currentView}
-              onViewChange={setCurrentView}
-            />
-          </div>
+          <DesignWizard
+            currentStep={currentWizardStep}
+            setCurrentStep={setCurrentWizardStep}
+            hasUploadedImage={!!uploadedImage}
+            hasDesignedProduct={hasDesignedProduct}
+            designPreviews={designPreviews}
+          />
+          
+          <WizardContent
+            currentStep={currentWizardStep}
+            products={products}
+            selectedProduct={selectedProduct}
+            uploadedImage={uploadedImage}
+            designState={designState}
+            designPreviews={designPreviews}
+            printAreas={PRINT_AREAS}
+            currentView={currentView}
+            isSubmitting={isSubmitting}
+            onProductSelect={handleProductSelect}
+            onImageUpload={handleImageUpload}
+            onDesignChange={updateDesignState}
+            onViewChange={setCurrentView}
+            onPreviewGenerated={handlePreviewGenerated}
+            onOrderSubmit={handleOrderSubmit}
+            onNextStep={handleNextStep}
+          />
         </div>
       )}
     </div>
