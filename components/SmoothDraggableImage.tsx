@@ -9,7 +9,7 @@ interface SmoothDraggableImageProps {
   rotation: number
   onPositionChange: (position: DesignPosition) => void
   containerRef: React.RefObject<HTMLDivElement>
-  printAreaRef?: React.RefObject<HTMLDivElement> // Nauja prop
+  printAreaRef?: React.RefObject<HTMLDivElement>
 }
 
 export default function SmoothDraggableImage({
@@ -25,7 +25,7 @@ export default function SmoothDraggableImage({
   const elementRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [bounds, setBounds] = useState({ left: -1000, top: -1000, right: 1000, bottom: 1000 }) // Pradines reikšmės didesnės
+  const [bounds, setBounds] = useState({ left: -1000, top: -1000, right: 1000, bottom: 1000 })
   
   // Performance optimization refs
   const dragStartRef = useRef({ x: 0, y: 0 })
@@ -33,239 +33,304 @@ export default function SmoothDraggableImage({
   const rafRef = useRef<number>()
   const lastUpdateRef = useRef<number>(0)
   const throttleTime = 16 // ~60fps
+  const firstLoadCompleted = useRef(false)
+  const imageLoadedRef = useRef(false)
 
-  // Update bounds when container or image size changes
-  useEffect(() => {
-    const updateBounds = () => {
-      if (!containerRef.current || !imageRef.current) return
-      
-      const container = containerRef.current.getBoundingClientRect()
-      const image = imageRef.current.getBoundingClientRect()
-      
-      // Skaičiuojame mastelį pagal dydį
-      const scaledWidth = image.width * scale
-      const scaledHeight = image.height * scale
-      
-      // Didesnės ribos, kad būtų galima patekti į spausdinimo zoną
-      // Jei turime spausdinimo zonos nuorodą, naudojame ją
-      if (printAreaRef && printAreaRef.current) {
-        const printArea = printAreaRef.current.getBoundingClientRect()
-        const containerCenter = {
-          x: container.width / 2,
-          y: container.height / 2
-        }
-        
-        const printAreaCenter = {
-          x: (printArea.left - container.left) + printArea.width / 2,
-          y: (printArea.top - container.top) + printArea.height / 2
-        }
-        
-        const offsetX = printAreaCenter.x - containerCenter.x
-        const offsetY = printAreaCenter.y - containerCenter.y
-        
-        // Nustatome ribas, labiau orientuotas į spausdinimo zoną
-        setBounds({
-          left: -container.width + offsetX,
-          top: -container.height + offsetY,
-          right: container.width + offsetX,
-          bottom: container.height + offsetY
-        })
-      } else {
-        // Nustatome ribas, kad vaizdas galėtų judėti visame konteineryje
-        setBounds({
-          left: -scaledWidth,
-          top: -scaledHeight,
-          right: container.width,
-          bottom: container.height
-        })
-      }
+  // Tikslus spausdinimo zonos centro nustatymas
+  const getExactPrintAreaCenter = useCallback(() => {
+    if (!printAreaRef?.current || !containerRef.current) {
+      return { x: 0, y: 0 };
     }
-
-    updateBounds()
-    window.addEventListener('resize', updateBounds)
     
-    // Atnaujinkime ribas ir po vaizdo įkėlimo
-    const img = new Image()
-    img.src = imageUrl
-    img.onload = updateBounds
+    // Gauname konteinerio ir spausdinimo zonos pozicijas
+    const container = containerRef.current.getBoundingClientRect();
+    const printArea = printAreaRef.current.getBoundingClientRect();
     
-    return () => window.removeEventListener('resize', updateBounds)
-  }, [scale, containerRef, printAreaRef, imageUrl])
+    // Konvertuojame printArea koordinates į konteinerio vidaus koordinates
+    const printAreaCenterX = printArea.left - container.left + printArea.width / 2;
+    const printAreaCenterY = printArea.top - container.top + printArea.height / 2;
+    
+    // Apskaičiuojame atstumą nuo konteinerio centro iki printArea centro
+    const containerCenterX = container.width / 2;
+    const containerCenterY = container.height / 2;
+    
+    // Grąžiname poslinkį, reikalingą patalpinti elementą printArea centre
+    return {
+      x: printAreaCenterX - containerCenterX,
+      y: printAreaCenterY - containerCenterY
+    };
+  }, [printAreaRef, containerRef]);
 
-  // Smooth animation frame update
+  // Pradinės pozicijos nustatymas
+  const setInitialPosition = useCallback(() => {
+    // Jei jau nustatyta, nebenustatom
+    if (firstLoadCompleted.current) return;
+    
+    const centerOffset = getExactPrintAreaCenter();
+    console.log("Setting initial position:", centerOffset);
+    
+    // Nustatome poziciją į printArea centrą
+    onPositionChange(centerOffset);
+    currentPositionRef.current = centerOffset;
+    firstLoadCompleted.current = true;
+    
+    // Iš karto atnaujinkime DOM, kad nebūtų mirkčiojimo
+    if (elementRef.current) {
+      elementRef.current.style.transform = `
+        translate(-50%, -50%)
+        translate3d(${centerOffset.x}px, ${centerOffset.y}px, 0)
+        scale(${scale})
+        rotate(${rotation}deg)
+      `;
+    }
+  }, [getExactPrintAreaCenter, onPositionChange, scale, rotation]);
+
+  // Ribų nustatymas pagal spausdinimo zoną
+  const updateBounds = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const container = containerRef.current.getBoundingClientRect();
+    
+    // Nustatome ribas pagal spausdinimo zoną, jei ji egzistuoja
+    if (printAreaRef?.current) {
+      const printArea = printAreaRef.current.getBoundingClientRect();
+      
+      // Apskaičiuojame ribas, kad elementas galėtų būti tempiamas, bet išliktų arti spausdinimo zonos
+      // Pridedame papildomą atstumą, kad būtų galima šiek tiek atitraukti nuo centro, jei reikia
+      const margin = Math.max(printArea.width, printArea.height) * 0.5;
+      
+      // Spausdinimo zonos koordinatės konteinerio sistemoje
+      const printAreaLeft = printArea.left - container.left;
+      const printAreaTop = printArea.top - container.top;
+      const printAreaRight = printAreaLeft + printArea.width;
+      const printAreaBottom = printAreaTop + printArea.height;
+      
+      // Konteinerio centro koordinatės
+      const containerCenterX = container.width / 2;
+      const containerCenterY = container.height / 2;
+      
+      // Ribos, nustatomos nuo spausdinimo zonos
+      setBounds({
+        left: (printAreaLeft + printArea.width / 2) - containerCenterX - margin,
+        top: (printAreaTop + printArea.height / 2) - containerCenterY - margin,
+        right: (printAreaLeft + printArea.width / 2) - containerCenterX + margin,
+        bottom: (printAreaTop + printArea.height / 2) - containerCenterY + margin
+      });
+    } else {
+      // Numatytosios ribos, jei nėra spausdinimo zonos
+      setBounds({
+        left: -container.width / 2,
+        top: -container.height / 2,
+        right: container.width / 2,
+        bottom: container.height / 2
+      });
+    }
+  }, [containerRef, printAreaRef]);
+
+  // Elemento pozicijos atnaujinimas
   const updatePosition = useCallback((x: number, y: number) => {
-    if (!elementRef.current) return
+    if (!elementRef.current) return;
     
-    // Apply bounds
-    const boundedX = Math.max(bounds.left, Math.min(bounds.right, x))
-    const boundedY = Math.max(bounds.top, Math.min(bounds.bottom, y))
+    // Taikome ribas
+    const boundedX = Math.max(bounds.left, Math.min(bounds.right, x));
+    const boundedY = Math.max(bounds.top, Math.min(bounds.bottom, y));
     
-    // Update element position directly for smooth movement
+    // Tiesiogiai atnaujiname elemento poziciją sklandžiam judėjimui
     elementRef.current.style.transform = `
-      translate(-50%, -50%) 
-      translate3d(${boundedX}px, ${boundedY}px, 0) 
-      scale(${scale}) 
+      translate(-50%, -50%)
+      translate3d(${boundedX}px, ${boundedY}px, 0)
+      scale(${scale})
       rotate(${rotation}deg)
-    `
+    `;
     
-    // Store current position
-    currentPositionRef.current = { x: boundedX, y: boundedY }
+    // Saugome dabartinę poziciją
+    currentPositionRef.current = { x: boundedX, y: boundedY };
     
-    // Throttle updates to parent
-    const now = performance.now()
+    // Ribojame atnaujinimų skaičių
+    const now = performance.now();
     if (now - lastUpdateRef.current >= throttleTime) {
-      onPositionChange({ x: boundedX, y: boundedY })
-      lastUpdateRef.current = now
+      onPositionChange({ x: boundedX, y: boundedY });
+      lastUpdateRef.current = now;
     }
-  }, [bounds, scale, rotation, onPositionChange])
+  }, [bounds, scale, rotation, onPositionChange]);
 
-  // Mouse event handlers
+  // Pelės įvykių valdikliai
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
+    e.preventDefault();
+    setIsDragging(true);
     
-    // Store initial position
+    // Saugome pradinę poziciją
     dragStartRef.current = {
       x: e.clientX - currentPositionRef.current.x,
       y: e.clientY - currentPositionRef.current.y
-    }
+    };
     
-    // Optimize for dragging
+    // Optimizuojame tempimui
     if (elementRef.current) {
-      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition')
-      elementRef.current.classList.remove('smooth-transition')
-      elementRef.current.style.willChange = 'transform'
+      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition');
+      elementRef.current.classList.remove('smooth-transition');
+      elementRef.current.style.willChange = 'transform';
     }
-  }, [])
+  }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return
+    if (!isDragging) return;
     
-    // Calculate new position
-    const x = e.clientX - dragStartRef.current.x
-    const y = e.clientY - dragStartRef.current.y
+    // Apskaičiuojame naują poziciją
+    const x = e.clientX - dragStartRef.current.x;
+    const y = e.clientY - dragStartRef.current.y;
     
-    // Use requestAnimationFrame for smooth updates
+    // Naudojame requestAnimationFrame sklandžiam atnaujinimui
     if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(rafRef.current);
     }
     
     rafRef.current = requestAnimationFrame(() => {
-      updatePosition(x, y)
-    })
-  }, [isDragging, updatePosition])
+      updatePosition(x, y);
+    });
+  }, [isDragging, updatePosition]);
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
+    setIsDragging(false);
     
-    // Cleanup
+    // Valome
     if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(rafRef.current);
     }
     
     if (elementRef.current) {
-      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition')
-      elementRef.current.classList.add('smooth-transition')
-      elementRef.current.style.willChange = 'auto'
+      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition');
+      elementRef.current.classList.add('smooth-transition');
+      elementRef.current.style.willChange = 'auto';
     }
     
-    // Final position update
-    onPositionChange(currentPositionRef.current)
-  }, [onPositionChange])
+    // Galutinis pozicijos atnaujinimas
+    onPositionChange(currentPositionRef.current);
+  }, [onPositionChange]);
 
-  // Touch event handlers
+  // Lietimo įvykių valdikliai
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    e.preventDefault()
-    if (e.touches.length !== 1) return
+    e.preventDefault();
+    if (e.touches.length !== 1) return;
     
-    setIsDragging(true)
+    setIsDragging(true);
     
-    const touch = e.touches[0]
+    const touch = e.touches[0];
     dragStartRef.current = {
       x: touch.clientX - currentPositionRef.current.x,
       y: touch.clientY - currentPositionRef.current.y
-    }
+    };
     
     if (elementRef.current) {
-      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition')
-      elementRef.current.classList.remove('smooth-transition')
-      elementRef.current.style.willChange = 'transform'
+      elementRef.current.classList.add('dragging', 'active-dragging', 'no-transition');
+      elementRef.current.classList.remove('smooth-transition');
+      elementRef.current.style.willChange = 'transform';
     }
-  }, [])
+  }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isDragging || e.touches.length !== 1) return
-    e.preventDefault()
+    if (!isDragging || e.touches.length !== 1) return;
+    e.preventDefault();
     
-    const touch = e.touches[0]
-    const x = touch.clientX - dragStartRef.current.x
-    const y = touch.clientY - dragStartRef.current.y
+    const touch = e.touches[0];
+    const x = touch.clientX - dragStartRef.current.x;
+    const y = touch.clientY - dragStartRef.current.y;
     
     if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(rafRef.current);
     }
     
     rafRef.current = requestAnimationFrame(() => {
-      updatePosition(x, y)
-    })
-  }, [isDragging, updatePosition])
+      updatePosition(x, y);
+    });
+  }, [isDragging, updatePosition]);
 
   const handleTouchEnd = useCallback(() => {
-    setIsDragging(false)
+    setIsDragging(false);
     
     if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
+      cancelAnimationFrame(rafRef.current);
     }
     
     if (elementRef.current) {
-      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition')
-      elementRef.current.classList.add('smooth-transition')
-      elementRef.current.style.willChange = 'auto'
+      elementRef.current.classList.remove('dragging', 'active-dragging', 'no-transition');
+      elementRef.current.classList.add('smooth-transition');
+      elementRef.current.style.willChange = 'auto';
     }
     
-    onPositionChange(currentPositionRef.current)
-  }, [onPositionChange])
+    onPositionChange(currentPositionRef.current);
+  }, [onPositionChange]);
 
-  // Add/remove event listeners
+  // Patikrinkime ribas ir atnaujiname jas, kai pasikeičia elementai
+  useEffect(() => {
+    // Atnaujiname ribas
+    updateBounds();
+    
+    // Pridedame įvykio klausymą lango dydžio pakeitimui
+    window.addEventListener('resize', updateBounds);
+    return () => window.removeEventListener('resize', updateBounds);
+  }, [updateBounds]);
+
+  // Pozicijos nustatymas pirmo įkėlimo metu
+  useEffect(() => {
+    // Jei vaizdas jau įkeltas, nustatome pradinę poziciją
+    if (imageLoadedRef.current && !firstLoadCompleted.current) {
+      setInitialPosition();
+    }
+
+    // Kai pasikeičia priklausomybės, galime iš naujo nustatyti poziciją
+    if (imageLoadedRef.current) {
+      // Atnaujinkime ribas ir poziciją su uždelsimu
+      setTimeout(() => {
+        updateBounds();
+        // Tik pirmo krovimo metu nustatome į centrą
+        if (!firstLoadCompleted.current) {
+          setInitialPosition();
+        }
+      }, 100);
+    }
+  }, [printAreaRef, containerRef, setInitialPosition, updateBounds]);
+
+  // Įvykių valdiklių pridėjimas/pašalinimas
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove, { passive: true })
-      document.addEventListener('mouseup', handleMouseUp)
-      document.addEventListener('touchmove', handleTouchMove, { passive: false })
-      document.addEventListener('touchend', handleTouchEnd)
+      document.addEventListener('mousemove', handleMouseMove, { passive: true });
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
     }
     
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.removeEventListener('touchmove', handleTouchMove)
-      document.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
       
       if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
+        cancelAnimationFrame(rafRef.current);
       }
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd])
+    };
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  // Sync with external position changes
+  // Sinchronizavimas su išoriniais pozicijos pakeitimais
   useEffect(() => {
     if (!isDragging) {
-      currentPositionRef.current = position
+      currentPositionRef.current = position;
       if (elementRef.current) {
         elementRef.current.style.transform = `
-          translate(-50%, -50%) 
-          translate3d(${position.x}px, ${position.y}px, 0) 
+          translate(-50%, -50%)
+          translate3d(${position.x}px, ${position.y}px, 0)
           scale(${scale})
           rotate(${rotation}deg)
-        `
+        `;
       }
     }
-  }, [position, scale, rotation, isDragging])
+  }, [position, scale, rotation, isDragging]);
 
   return (
     <div
       ref={elementRef}
-      className={`absolute cursor-grab performance-boost draggable-image smooth-transition 
+      className={`absolute cursor-grab performance-boost draggable-image smooth-transition
         ${isDragging ? 'cursor-grabbing z-10 dragging active-dragging no-transition' : ''}`}
       style={{
         transform: `translate(-50%, -50%) translate3d(${position.x}px, ${position.y}px, 0) scale(${scale}) rotate(${rotation}deg)`,
@@ -283,12 +348,18 @@ export default function SmoothDraggableImage({
         className="max-w-[200px] max-h-[200px] pointer-events-none select-none"
         draggable={false}
         onLoad={() => {
-          if (imageRef.current) {
-            const event = new Event('resize')
-            window.dispatchEvent(event)
+          imageLoadedRef.current = true;
+          
+          // Kai vaizdas įkeltas, nustatome pradinę poziciją
+          if (!firstLoadCompleted.current && containerRef.current && printAreaRef?.current) {
+            // Uždelskime truputį, kad įsitikintume, jog DOM atnaujintas
+            setTimeout(() => {
+              updateBounds();
+              setInitialPosition();
+            }, 50);
           }
         }}
       />
     </div>
-  )
+  );
 }

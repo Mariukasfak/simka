@@ -29,13 +29,14 @@ export default function EnhancedDesignCanvas({
   onViewChange
 }: EnhancedDesignCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const printAreaRef = useRef<HTMLDivElement>(null) // Nauja nuoroda į spausdinimo zoną
+  const printAreaRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [showGrid, setShowGrid] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const previewInProgressRef = useRef(false)
+  const initialLoadCompleted = useRef(false)
   
-  // Optimizuotas peržiūros generavimas - padidinta debounce reikšmė ir triggerinimas tik reikšmingų pakeitimų
+  // Optimizuotas peržiūros generavimas
   const generatePreview = useCallback(
     debounce(async () => {
       if (!canvasRef.current || !uploadedImage || previewInProgressRef.current) {
@@ -49,7 +50,7 @@ export default function EnhancedDesignCanvas({
         
         const canvas = await html2canvas(canvasRef.current, {
           backgroundColor: null,
-          scale: 2, // Padidintas mastelis geresnei kokybei
+          scale: 2,
           logging: false,
           useCORS: true,
           allowTaint: true
@@ -65,7 +66,7 @@ export default function EnhancedDesignCanvas({
         setIsGenerating(false)
         previewInProgressRef.current = false;
       }
-    }, 1500), // Padidinta debounce reikšmė stabilesniam veikimui
+    }, 1000),
     [uploadedImage, onPreviewGenerated]
   )
 
@@ -73,31 +74,42 @@ export default function EnhancedDesignCanvas({
     onDesignChange({ position: newPosition })
   }, [onDesignChange])
 
+  // Tikslaus spausdinimo zonos centro skaičiavimas
+  const calculatePrintAreaCenterOffset = useCallback(() => {
+    if (!printAreaRef.current || !canvasRef.current) {
+      return { x: 0, y: 0 };
+    }
+
+    const container = canvasRef.current.getBoundingClientRect();
+    const printArea = printAreaRef.current.getBoundingClientRect();
+    
+    // Apskaičiuojame spausdinimo zonos centro koordinates konteinerio viduje
+    const printAreaCenterX = printArea.left - container.left + printArea.width / 2;
+    const printAreaCenterY = printArea.top - container.top + printArea.height / 2;
+    
+    // Apskaičiuojame atstumą nuo konteinerio centro
+    const containerCenterX = container.width / 2;
+    const containerCenterY = container.height / 2;
+    
+    // Grąžiname poslinkį, reikalingą patalpinti elementą spausdinimo zonos centre
+    return {
+      x: printAreaCenterX - containerCenterX,
+      y: printAreaCenterY - containerCenterY
+    };
+  }, []);
+
+  // Grąžina elementą į spausdinimo zonos centrą
   const handleReset = useCallback(() => {
-    // Nustatome poziciją į spausdinimo zonos centrą, jei yra
     if (printAreaRef.current && canvasRef.current) {
-      const printArea = printAreaRef.current.getBoundingClientRect()
-      const container = canvasRef.current.getBoundingClientRect()
-      
-      const containerCenter = {
-        x: container.width / 2,
-        y: container.height / 2
-      }
-      
-      const printAreaCenter = {
-        x: (printArea.left - container.left) + printArea.width / 2,
-        y: (printArea.top - container.top) + printArea.height / 2
-      }
-      
-      const offsetX = printAreaCenter.x - containerCenter.x
-      const offsetY = printAreaCenter.y - containerCenter.y
+      const offset = calculatePrintAreaCenterOffset();
+      console.log("Resetting to center:", offset);
       
       onDesignChange({
-        position: { x: offsetX, y: offsetY },
+        position: offset,
         rotation: 0,
         scale: 1,
         opacity: 1
-      })
+      });
     } else {
       // Jei negalime gauti spausdinimo zonos, naudojame numatytuosius
       onDesignChange({
@@ -105,20 +117,20 @@ export default function EnhancedDesignCanvas({
         rotation: 0,
         scale: 1,
         opacity: 1
-      })
+      });
     }
-  }, [onDesignChange])
+  }, [onDesignChange, calculatePrintAreaCenterOffset]);
 
   // Valymas sunaikinant komponentą
   useEffect(() => {
     return () => {
       generatePreview.cancel()
     }
-  }, [generatePreview])
+  }, [generatePreview]);
 
   // Peržiūros generavimas po reikšmingų pakeitimų
   useEffect(() => {
-    generatePreview()
+    generatePreview();
   }, [
     productImage, 
     uploadedImage, 
@@ -127,15 +139,31 @@ export default function EnhancedDesignCanvas({
     designState.rotation, 
     currentView,
     generatePreview
-  ])
+  ]);
   
-  // Atnaujinkime pradinę poziciją pakrovus naują vaizdą
+  // Rodinių pasikeitimo apdorojimas - pakeitus rodinį, atnaujinkime poziciją
   useEffect(() => {
-    if (uploadedImage && !designState.position.x && !designState.position.y) {
-      // Kai naujas vaizdas įkeltas, bet pozicija dar nenustatyta, centruojame jį
-      handleReset()
+    if (uploadedImage) {
+      // Kai keičiame rodinį (pvz., iš priekio į nugarą), turėtų logotipas būti ties nauju printArea centru
+      setTimeout(() => {
+        handleReset();
+      }, 100);
     }
-  }, [uploadedImage, designState.position, handleReset])
+  }, [currentView, handleReset, uploadedImage]);
+
+  // Atnaujinkime pradinę poziciją, kai produkto vaizdas įkeliamas
+  useEffect(() => {
+    const img = new Image();
+    img.src = productImage;
+    img.onload = () => {
+      // Kai produkto vaizdas įkeliamas, nustatykime logotipo poziciją
+      if (uploadedImage) {
+        setTimeout(() => {
+          handleReset();
+        }, 100);
+      }
+    };
+  }, [productImage, uploadedImage, handleReset]);
 
   return (
     <div className="space-y-4">
@@ -199,7 +227,7 @@ export default function EnhancedDesignCanvas({
           onClick={handleReset}
           icon={RefreshCw}
         >
-          Atstatyti
+          Atstatyti į centrą
         </Button>
         <Button
           variant="outline"
@@ -243,7 +271,7 @@ export default function EnhancedDesignCanvas({
         
         {/* Spausdinimo srities indikatorius */}
         <div
-          ref={printAreaRef} // Pridėta nuoroda į printArea elementą
+          ref={printAreaRef}
           className="absolute border-2 border-dashed border-accent-400 rounded-lg pointer-events-none z-10"
           style={{
             top: `${printAreas[currentView].bounds.top}%`,
@@ -268,7 +296,7 @@ export default function EnhancedDesignCanvas({
             rotation={designState.rotation}
             onPositionChange={handlePositionChange}
             containerRef={canvasRef}
-            printAreaRef={printAreaRef} // Perduodame nuorodą į spausdinimo zoną
+            printAreaRef={printAreaRef}
           />
         )}
         
@@ -325,6 +353,7 @@ export default function EnhancedDesignCanvas({
       <div className="text-sm text-gray-500 text-center">
         <p>Tempkite pele, kad pakeistumėte logotipo poziciją</p>
         <p>Naudokite slankiklius dydžio ir permatomumo keitimui</p>
+        <p className="mt-2 text-accent-600 font-medium">Logotipas bus pritaikytas punktyrinių linijų zonoje</p>
       </div>
     </div>
   )
