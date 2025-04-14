@@ -1,4 +1,3 @@
-// Reeksportuojame visus tipus, kad jie būtų pasiekiami per '@/types' kelią
+// Reeksportuojame visus tipus
+// Ankstesnis importas iš ../src/types pašalintas, nes src/ katalogas nebenaudojamas
 export * from '../lib/types'
-
-// Pastaba: ankstesnis importas iš ../src/types pašalintas, nes src/ katalogas nebėra aktyviai naudojamas
