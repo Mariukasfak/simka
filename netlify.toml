@@ -5,7 +5,5 @@
 [build.environment]
   NEXT_PUBLIC_SITE_URL = "https://siemka-design-tool.netlify.app"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
