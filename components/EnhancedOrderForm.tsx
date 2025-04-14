@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -38,7 +38,7 @@ const orderFormSchema = z.object({
 
 type OrderFormData = z.infer<typeof orderFormSchema>
 
-// Print area labels in Lithuanian
+// Print area labels in Lithuanian - optimizuota su useMemo
 const printAreaLabels: Record<PrintAreaPosition, string> = {
   'front': 'Priekis',
   'back': 'Nugara',
@@ -66,7 +66,11 @@ export default function EnhancedOrderForm({
   const [showPreview, setShowPreview] = useState(false)
   const [currentPreview, setCurrentPreview] = useState<PrintAreaPosition | null>(null)
   
-  const defaultPrintAreas = printAreas.filter(area => designPreviews[area] !== null)
+  // Optimizuota su useMemo, kad nereikėtų kaskart perskaičiuoti
+  const defaultPrintAreas = useMemo(() => 
+    printAreas.filter(area => designPreviews[area] !== null), 
+    [printAreas, designPreviews]
+  )
   
   const {
     register,
@@ -86,24 +90,34 @@ export default function EnhancedOrderForm({
   const selectedPrintAreas = watch('printAreas')
   const quantity = watch('quantity')
   
-  const handleFormSubmit = async (data: OrderFormData) => {
+  // Optimizuota su useCallback
+  const handleFormSubmit = useCallback(async (data: OrderFormData) => {
     try {
       await onSubmit(data)
       reset()
     } catch (error) {
       console.error('Order submission error:', error)
     }
-  }
+  }, [onSubmit, reset])
 
-  // Calculate total price
-  const calculateTotalPrice = () => {
+  // Calculate total price - optimizuota su useMemo
+  const totalPrice = useMemo(() => {
     const basePrice = productPrice * (quantity || 1)
     const printingPrice = (selectedPrintAreas?.length || 0) * 5 // €5 per print area
     return basePrice + printingPrice
-  }
+  }, [productPrice, quantity, selectedPrintAreas])
 
-  // Check if at least one design is added
-  const hasAnyDesign = Object.values(designPreviews).some(preview => preview !== null)
+  // Check if at least one design is added - optimizuota su useMemo
+  const hasAnyDesign = useMemo(() => 
+    Object.values(designPreviews).some(preview => preview !== null),
+    [designPreviews]
+  )
+
+  // Optimizuota funkcija preview parodymui
+  const showPreviewForArea = useCallback((area: PrintAreaPosition) => {
+    setCurrentPreview(area)
+    setShowPreview(true)
+  }, [])
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -254,10 +268,7 @@ export default function EnhancedOrderForm({
                   <button
                     type="button"
                     className="ml-auto text-xs text-indigo-600 hover:text-indigo-800"
-                    onClick={() => {
-                      setCurrentPreview(area)
-                      setShowPreview(true)
-                    }}
+                    onClick={() => showPreviewForArea(area)}
                   >
                     Peržiūrėti
                   </button>
@@ -305,7 +316,7 @@ export default function EnhancedOrderForm({
             </div>
             <div className="flex justify-between font-medium pt-2 border-t">
               <span>Viso:</span>
-              <span>€{calculateTotalPrice().toFixed(2)}</span>
+              <span>€{totalPrice.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -333,6 +344,14 @@ export default function EnhancedOrderForm({
           Pridėkite bent vieną dizainą, kad galėtumėte pateikti užklausą.
         </div>
       )}
+
+      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <h4 className="text-sm font-medium text-blue-800">Patarimas</h4>
+        <p className="text-sm text-blue-700 mt-1">
+          <a href="/login" className="underline hover:text-blue-800">Prisijungę</a> galėsite 
+          išsaugoti savo dizainus, peržiūrėti ankstesnius užsakymus ir greičiau atlikti pakartotinius užsakymus.
+        </p>
+      </div>
     </form>
   )
 }

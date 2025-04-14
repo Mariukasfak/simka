@@ -8,7 +8,7 @@ import SmoothDraggableImage from './SmoothDraggableImage'
 import type { PrintArea, PrintAreaPosition, DesignState } from '@/lib/types'
 
 interface EnhancedDesignCanvasProps {
-  productImage: string
+  productImage: string // Pataisyta: priima tik string tipą
   uploadedImage: string | null
   designState: DesignState
   onDesignChange: (changes: Partial<DesignState>) => void
@@ -54,13 +54,13 @@ export default function EnhancedDesignCanvas({
         
         const canvas = await html2canvas(canvasRef.current, {
           backgroundColor: null,
-          scale: 1.5, // Sumažinome iš 2 į 1.5, kad būtų mažiau apkraunantis
+          scale: 1.5, // Geresniam balansui tarp kokybės ir našumo
           logging: false,
           useCORS: true,
           allowTaint: true
         });
         
-        const preview = canvas.toDataURL('image/jpeg', 0.8); // Sumažinome kokybę iš 0.9 į 0.8
+        const preview = canvas.toDataURL('image/jpeg', 0.8); // Optimizuota kokybė
         onPreviewGenerated(preview);
         
         clearTimeout(indicatorTimeout);
@@ -72,10 +72,11 @@ export default function EnhancedDesignCanvas({
         setIsGenerating(false);
         previewInProgressRef.current = false;
       }
-    }, 2000), // Padidinome laiką iš 1000ms į 2000ms - dabar ši funkcija bus kviečiama rečiau
+    }, 1500), // 1.5 sekundės - geras balansas
     [uploadedImage, onPreviewGenerated]
   )
 
+  // Atnaujinta pozicijos keitimo funkcija
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
     // Tiesiog atnaujinome poziciją be papildomo peržiūros generavimo
     onDesignChange({ position: newPosition })
@@ -85,9 +86,7 @@ export default function EnhancedDesignCanvas({
   const handlePositionChangeEnd = useCallback((newPosition: { x: number, y: number }) => {
     onDesignChange({ position: newPosition })
     // Peržiūrą generuojame tik kartą po pozicijos pasikeitimo
-    setTimeout(() => {
-      generatePreview()
-    }, 100)
+    generatePreview()
   }, [onDesignChange, generatePreview])
 
   // Tikslaus spausdinimo zonos centro skaičiavimas
@@ -107,7 +106,6 @@ export default function EnhancedDesignCanvas({
     const containerCenterX = container.width / 2;
     const containerCenterY = container.height / 2;
     
-    // Grąžiname poslinkį, reikalingą patalpinti elementą spausdinimo zonos centre
     return {
       x: printAreaCenterX - containerCenterX,
       y: printAreaCenterY - containerCenterY
@@ -118,7 +116,6 @@ export default function EnhancedDesignCanvas({
   const handleReset = useCallback(() => {
     if (printAreaRef.current && canvasRef.current) {
       const offset = calculatePrintAreaCenterOffset();
-      console.log("Resetting to center:", offset);
       
       onDesignChange({
         position: offset,
@@ -148,7 +145,7 @@ export default function EnhancedDesignCanvas({
   useEffect(() => {
     generatePreview();
   }, [
-    productImage, 
+    productImage, // Naudojame tiesioginę reikšmę
     uploadedImage, 
     designState.scale, 
     designState.opacity, 
@@ -157,13 +154,10 @@ export default function EnhancedDesignCanvas({
     generatePreview
   ]);
   
-  // Rodinių pasikeitimo apdorojimas - pakeitus rodinį, atnaujinkime poziciją
+  // Rodinių pasikeitimo apdorojimas
   useEffect(() => {
     if (uploadedImage) {
-      // Kai keičiame rodinį (pvz., iš priekio į nugarą), turėtų logotipas būti ties nauju printArea centru
-      setTimeout(() => {
-        handleReset();
-      }, 100);
+      handleReset();
     }
   }, [currentView, handleReset, uploadedImage]);
 
@@ -174,9 +168,7 @@ export default function EnhancedDesignCanvas({
     img.onload = () => {
       // Kai produkto vaizdas įkeliamas, nustatykime logotipo poziciją
       if (uploadedImage) {
-        setTimeout(() => {
-          handleReset();
-        }, 100);
+        handleReset();
       }
     };
   }, [productImage, uploadedImage, handleReset]);
@@ -236,7 +228,7 @@ export default function EnhancedDesignCanvas({
         </div>
       </div>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         <Button
           variant="outline"
           size="sm"

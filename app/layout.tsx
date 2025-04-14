@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Toaster } from 'react-hot-toast'
+import ToastContainer from '@/components/ToastContainer'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
@@ -36,16 +36,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </div>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 5000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-          }} 
-        />
+        <ToastContainer />
       </body>
     </html>
   )

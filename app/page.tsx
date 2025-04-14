@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import ProductSelector from '@/components/ProductSelector'
 import UploadArea from '@/components/UploadArea'
@@ -8,7 +8,7 @@ import EnhancedDesignCanvas from '@/components/EnhancedDesignCanvas'
 import EnhancedOrderForm from '@/components/EnhancedOrderForm'
 import { useDesignState } from '@/lib/hooks/useDesignState'
 import { PRINT_AREAS, PRODUCT_VIEWS } from '@/lib/constants'
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 import type { Product } from '@/lib/types'
 
 // Sukuriame atskirą komponentą su useSearchParams
@@ -35,16 +35,8 @@ function HomeContent() {
     'right-sleeve': null
   })
   
-  const [selectedProduct, setSelectedProduct] = useState<Product>({
-    id: 'hoodie-light',
-    name: 'Džemperis (šviesus)',
-    imageUrl: '/images/hoodie_light.png',
-    type: 'hoodie',
-    color: 'light',
-    price: 39.99
-  })
-
-  const products: Product[] = [
+  // Atnaujiname pradinius produktus, naudodami useMemo
+  const products: Product[] = useMemo(() => [
     {
       id: 'hoodie-dark',
       name: 'Džemperis (tamsus)',
@@ -77,9 +69,11 @@ function HomeContent() {
       color: 'light',
       price: 24.99
     }
-  ]
+  ], []);
   
-  // Load product from URL params
+  const [selectedProduct, setSelectedProduct] = useState<Product>(products[1]); // Džemperis (šviesus) kaip numatytasis
+  
+  // Load product from URL params - optimizuotas su useCallback
   useEffect(() => {
     if (searchParams) {
       const productId = searchParams.get('product')
@@ -94,46 +88,47 @@ function HomeContent() {
     // Simulate loading
     const timer = setTimeout(() => {
       setIsLoading(false)
-    }, 500)
+    }, 300) // Sumažiname užkrovimo laiką
     
     return () => clearTimeout(timer)
   }, [searchParams, products])
 
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product)
-    // Reset design state when changing products
-    resetDesignState()
-    setDesignPreviews({
+  // Reset funkcija - optimizuota su useCallback
+  const resetPreviews = useCallback(() => {
+    return {
       'front': null,
       'back': null,
       'left-sleeve': null,
       'right-sleeve': null
-    })
-  }
+    };
+  }, []);
+
+  const handleProductSelect = useCallback((product: Product) => {
+    setSelectedProduct(product)
+    // Reset design state when changing products
+    resetDesignState()
+    setDesignPreviews(resetPreviews())
+  }, [resetDesignState, resetPreviews]);
   
-  const handleImageUpload = (imageUrl: string) => {
+  const handleImageUpload = useCallback((imageUrl: string) => {
     setUploadedImage(imageUrl || null)
     
     if (!imageUrl) {
       // Clear all previews if no image
-      setDesignPreviews({
-        'front': null,
-        'back': null,
-        'left-sleeve': null,
-        'right-sleeve': null
-      })
+      setDesignPreviews(resetPreviews())
     }
-  }
+  }, [resetPreviews]);
 
   // Update preview for current view
-  const handlePreviewGenerated = (preview: string | null) => {
+  const handlePreviewGenerated = useCallback((preview: string | null) => {
     setDesignPreviews(prev => ({
       ...prev,
       [currentView]: preview
     }))
-  }
+  }, [currentView]);
 
-  const handleOrderSubmit = async (formData: any) => {
+  // Optimizuota versija su POST į API
+  const handleOrderSubmit = useCallback(async (formData: any) => {
     if (!Object.values(designPreviews).some(preview => preview !== null)) {
       toast.error('Nepavyko sugeneruoti dizaino peržiūros')
       return
@@ -141,40 +136,46 @@ function HomeContent() {
 
     setIsSubmitting(true)
     try {
-      // Here would be the API call to the server
-      // For now, we'll simulate the request
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Create data that would be sent to the server
+      // Sukuriame užsakymo duomenis
       const orderData = {
         ...formData,
         product: selectedProduct,
         designPreviews,
         designState,
-        totalPrice: selectedProduct.price * formData.quantity
+        totalPrice: selectedProduct.price * formData.quantity,
+        printAreas: Object.keys(PRINT_AREAS).filter(area => designPreviews[area] !== null)
       }
       
-      console.log('Sending order data:', orderData)
+      // Siunčiame duomenis į serverį
+      const response = await fetch('/api/submit-design', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Įvyko klaida siunčiant užklausą');
+      }
       
       toast.success('Užklausa sėkmingai išsiųsta!')
       
       // Reset form
       setUploadedImage(null)
       resetDesignState()
-      setDesignPreviews({
-        'front': null,
-        'back': null,
-        'left-sleeve': null,
-        'right-sleeve': null
-      })
+      setDesignPreviews(resetPreviews())
     } catch (error) {
       console.error('Error submitting order:', error)
-      toast.error('Įvyko klaida siunčiant užklausą')
+      toast.error(error instanceof Error ? error.message : 'Įvyko klaida siunčiant užklausą')
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [designPreviews, designState, resetDesignState, resetPreviews, selectedProduct]);
   
+  // Kraunasi būsena - optimizuota versija
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -186,15 +187,14 @@ function HomeContent() {
     )
   }
 
-  // Get current product view image
-  const getCurrentProductImage = () => {
+  // Get current product view image - PATAISYTA
+  // Čia tiesiogiai apskaičiuojame produkto vaizdą, o ne graziname funkciją
+  const currentProductImage = (() => {
     const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS]
-    // Saugiai tikriname, ar views turi currentView, jei ne - gražiname numatytąjį produkto vaizdą
     return views && currentView in views ? 
-      // Čia naudojame indekso tipo prieigą su apsauga
       views[currentView as keyof typeof views] : 
       selectedProduct.imageUrl
-  }
+  })();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -248,7 +248,7 @@ function HomeContent() {
 
         <div>
           <EnhancedDesignCanvas
-            productImage={getCurrentProductImage()}
+            productImage={currentProductImage}
             uploadedImage={uploadedImage}
             designState={designState}
             onDesignChange={updateDesignState}
@@ -263,7 +263,7 @@ function HomeContent() {
   )
 }
 
-// Pagrindinis puslapis su Suspense
+// Pagrindinis puslapis su Suspense - atnaujintas komponentas be privalomo prisijungimo
 export default function Home() {
   return (
     <Suspense fallback={
