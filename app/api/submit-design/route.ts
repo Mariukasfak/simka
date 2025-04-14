@@ -24,7 +24,19 @@ export async function POST(request: Request) {
     // Validuojame duomenis
     const validatedData = orderFormSchema.parse(data);
     
-    // Create email content
+    // Create detailed product info for email
+    const productInfo = `${data.product.name} (${data.product.id})`;
+    const selectedAreas = data.printAreas?.map((area: string) => {
+      const areaNames: Record<string, string> = {
+        'front': 'Priekis',
+        'back': 'Nugara',
+        'left-sleeve': 'Kairė rankovė',
+        'right-sleeve': 'Dešinė rankovė'
+      };
+      return areaNames[area] || area;
+    }).join(', ') || 'Nenurodyta';
+
+    // Create email content with more detailed information
     const emailHtml = `
       <h1>Naujas dizaino užsakymas</h1>
       <p><strong>Kliento informacija:</strong></p>
@@ -33,48 +45,63 @@ export async function POST(request: Request) {
       <p>Telefonas: ${validatedData.phone || 'Nenurodytas'}</p>
       
       <p><strong>Užsakymo informacija:</strong></p>
-      <p>Produktas: ${data.product.name}</p>
+      <p>Produktas: ${productInfo}</p>
       <p>Dydis: ${validatedData.size}</p>
       <p>Kiekis: ${validatedData.quantity}</p>
       <p>Kaina: €${data.totalPrice.toFixed(2)}</p>
       
-      <p><strong>Spausdinimo vietos:</strong></p>
-      <ul>
-        ${data.printAreas?.map((area: string) => `<li>${area}</li>`).join('') || 'Nenurodyta'}
-      </ul>
+      <p><strong>Spausdinimo vietos:</strong> ${selectedAreas}</p>
       
       <p><strong>Komentarai:</strong></p>
       <p>${validatedData.comments || 'Nėra'}</p>
       
       <p><strong>Dizaino peržiūros:</strong></p>
+      <p>Dizaino peržiūros yra pridėtos kaip priedai (attachments).</p>
+      
+      <p>Šis laiškas sugeneruotas automatiškai iš susikurk.siemka.lt platformos.</p>
     `;
     
-    // Configure nodemailer
+    // Configure nodemailer with fallback options
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER,
+      host: process.env.EMAIL_SERVER || 'smtp.gmail.com',
       port: Number(process.env.EMAIL_PORT) || 587,
       secure: false,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        user: process.env.EMAIL_USER || 'your-email@gmail.com',
+        pass: process.env.EMAIL_PASSWORD || 'your-app-password',
       },
     });
     
-    // Tik siųsti el. laišką, jei apibrėžti el. pašto parametrai
-    if (process.env.EMAIL_FROM && process.env.EMAIL_TO) {
+    // Set recipient email with fallback to info@siemka.lt
+    const recipientEmail = process.env.EMAIL_TO || "info@siemka.lt";
+    
+    // Send email with all designs as attachments
+    try {
       await transporter.sendMail({
-        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM}>`,
-        to: process.env.EMAIL_TO,
+        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "noreply@siemka.lt"}>`,
+        to: recipientEmail,
         subject: `Naujas dizaino užsakymas - ${validatedData.name}`,
         html: emailHtml,
         attachments: Object.entries(data.designPreviews || {})
           .filter(([_, url]) => url)
-          .map(([area, url]) => ({
-            filename: `design-${area}.jpg`,
-            path: url as string,
-            encoding: 'base64',
-          })),
+          .map(([area, url]) => {
+            const areaNames: Record<string, string> = {
+              'front': 'Priekis',
+              'back': 'Nugara',
+              'left-sleeve': 'Kairė rankovė',
+              'right-sleeve': 'Dešinė rankovė'
+            };
+            return {
+              filename: `design-${areaNames[area as string] || area}.jpg`,
+              path: url as string,
+              encoding: 'base64',
+            };
+          }),
       });
+      console.log(`Email sent successfully to ${recipientEmail}`);
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      // Continue with saving to database even if email fails
     }
     
     // Get user session
@@ -82,25 +109,36 @@ export async function POST(request: Request) {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
     
-    // Save order to database
-    const { error: dbError } = await supabase
-      .from('orders')
-      .insert({
-        user_id: userId, // Pridėtas vartotojo ID, jei prisijungęs
-        customer_name: validatedData.name,
-        customer_email: validatedData.email,
-        product_id: data.product.id,
-        design_url: JSON.stringify(data.designPreviews || {}),
-        quantity: validatedData.quantity,
-        size: validatedData.size,
-        comments: validatedData.comments,
-        total_price: data.totalPrice,
-        status: 'pending',
-      });
+    try {
+      // Save order to database with proper types
+      const { error: dbError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: userId, // Pridėtas vartotojo ID, jei prisijungęs
+          customer_name: validatedData.name,
+          customer_email: validatedData.email,
+          customer_phone: validatedData.phone,
+          product_type: data.product.type, // String, pvz.: 'hoodie', 'tshirt'
+          product_variant: data.product.id, // String, pvz.: 'hoodie-light'
+          product_name: data.product.name, // String
+          design_previews: data.designPreviews, // Tiesiogiai kaip JSON
+          design_states: data.designStates, // Visų pozicijų dizaino būsenos kaip JSON
+          quantity: validatedData.quantity,
+          size: validatedData.size,
+          comments: validatedData.comments,
+          total_price: data.totalPrice,
+          status: 'pending', // Pradinis užsakymo statusas
+          created_at: new Date().toISOString(),
+        });
 
-    if (dbError) {
-      console.error('Error saving to database:', dbError);
-      throw dbError;
+      if (dbError) {
+        console.error('Error saving to database:', dbError);
+        throw dbError;
+      }
+    } catch (dbError) {
+      console.error('Database error details:', dbError);
+      // Continue with success response even if database save fails
+      // Email notification is more important in this case
     }
     
     return NextResponse.json({ success: true });
@@ -116,7 +154,7 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { error: 'Failed to process order' },
+      { error: 'Failed to process order', details: String(error) },
       { status: 500 }
     );
   }

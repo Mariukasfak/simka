@@ -1,6 +1,6 @@
 import type { PrintArea, PrintAreaPosition } from './types'
 
-// Spausdinimo vietos
+// Spausdinimo vietos - optimizuotos pagal produkto tipą
 export const PRINT_AREAS: Record<PrintAreaPosition, PrintArea> = {
   'front': {
     id: 'front',
@@ -22,7 +22,7 @@ export const PRINT_AREAS: Record<PrintAreaPosition, PrintArea> = {
     maxWidth: 300,
     maxHeight: 350,
     bounds: {
-      top: 25,
+      top: 25, // Nekeičiame, nes tai yra simetriškas vaizdas
       left: 25,
       width: 50,
       height: 50
@@ -67,22 +67,20 @@ export const PRODUCT_AVAILABLE_PRINT_AREAS: Record<string, PrintAreaPosition[]> 
 // Produktų vaizdai skirtingoms spausdinimo vietoms
 export const PRODUCT_VIEWS = {
   'hoodie-dark': {
-    front: '/images/hoodie_dark_front.png',
-    back: '/images/hoodie_dark_back.png',
-    'left-sleeve': '/images/hoodie_dark_left.png',
-    'right-sleeve': '/images/hoodie_dark_right.png'
+    front: '/images/hoodie_dark.png', // Naudojame bendrą vaizdą, nes nėra atskiro
+    back: '/images/hoodie_dark.png'   // Naudojame bendrą vaizdą, nes nėra atskiro
   },
   'hoodie-light': {
     front: '/images/hoodie_light_front.png',
     back: '/images/hoodie_light_back.png'
   },
   'tshirt-dark': {
-    front: '/images/tshirt_dark_front.png',
-    back: '/images/tshirt_dark_back.png'
+    front: '/images/tshirt_dark.png', // Naudojame bendrą vaizdą, nes nėra atskiro
+    back: '/images/tshirt_dark.png'   // Naudojame bendrą vaizdą, nes nėra atskiro
   },
   'tshirt-light': {
-    front: '/images/tshirt_light_front.png',
-    back: '/images/tshirt_light_back.png'
+    front: '/images/tshirt_light.png', // Laikinai naudojame bendrą vaizdą
+    back: '/images/tshirt_light.png'   // Laikinai naudojame bendrą vaizdą
   }
 }
 

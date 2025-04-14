@@ -27,10 +27,12 @@ function HomeContent() {
   // Design state management
   const {
     designState,
+    designStates,
     currentView,
     updateDesignState,
     setCurrentView,
-    resetDesignState
+    resetDesignState,
+    getAllDesignStates
   } = useDesignState()
   
   // Design previews for each print area
@@ -157,7 +159,7 @@ function HomeContent() {
         ...formData,
         product: selectedProduct,
         designPreviews,
-        designState,
+        designStates: getAllDesignStates(), // Naudojame visų pozicijų dizaino būsenas
         totalPrice: selectedProduct.price * formData.quantity,
         printAreas: Object.keys(PRINT_AREAS).filter(area => designPreviews[area] !== null)
       }
@@ -191,7 +193,7 @@ function HomeContent() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [designPreviews, designState, resetDesignState, resetPreviews, selectedProduct]);
+  }, [designPreviews, designState, getAllDesignStates, resetDesignState, resetPreviews, selectedProduct]);
 
   // Pereiname į kitą žingsnį
   const handleNextStep = useCallback(() => {
