@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { Button } from '@/components/common/Button'
+import Link from 'next/link'
 
 const NotFound = () => {
   return (
@@ -8,7 +8,7 @@ const NotFound = () => {
       <p className="text-xl text-gray-600 mb-8">
         The page you're looking for doesn't exist.
       </p>
-      <Link to="/">
+      <Link href="/">
         <Button variant="primary">Go Home</Button>
       </Link>
     </div>

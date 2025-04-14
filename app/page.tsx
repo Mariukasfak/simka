@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import ProductSelector from '@/components/ProductSelector'
 import UploadArea from '@/components/UploadArea'
@@ -11,7 +11,8 @@ import { PRINT_AREAS, PRODUCT_VIEWS } from '@/lib/constants'
 import toast from 'react-hot-toast'
 import type { Product } from '@/lib/types'
 
-export default function Home() {
+// Sukuriame atskirą komponentą su useSearchParams
+function HomeContent() {
   const searchParams = useSearchParams()
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -259,5 +260,21 @@ export default function Home() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Pagrindinis puslapis su Suspense
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-600 mb-3"></div>
+          <p className="text-accent-600">Kraunama...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }

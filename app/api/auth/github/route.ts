@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// Nurodome Next.js, kad šis maršrutas turi būti dinaminis
+export const dynamic = 'force-dynamic'
+
 const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
 const REDIRECT_URI = process.env.NEXT_PUBLIC_GITHUB_REDIRECT_URI
 
