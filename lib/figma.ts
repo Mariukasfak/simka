@@ -1,15 +1,7 @@
 import { Client } from 'figma-js'
 
-const FIGMA_ACCESS_TOKEN = process.env.FIGMA_ACCESS_TOKEN
-const FIGMA_FILE_KEY = process.env.FIGMA_FILE_KEY
-
-if (!FIGMA_ACCESS_TOKEN) {
-  throw new Error('FIGMA_ACCESS_TOKEN is not defined')
-}
-
-if (!FIGMA_FILE_KEY) {
-  throw new Error('FIGMA_FILE_KEY is not defined')
-}
+const FIGMA_ACCESS_TOKEN = process.env.FIGMA_ACCESS_TOKEN || 'dummy-token'
+const FIGMA_FILE_KEY = process.env.FIGMA_FILE_KEY || 'dummy-key'
 
 // Šis kintamasis yra užtikrintas, kad yra string, nes patikrinome anksčiau
 const FILE_KEY = FIGMA_FILE_KEY as string
@@ -43,32 +35,22 @@ export async function getFigmaImages(nodeIds: string[]) {
 }
 
 export async function getProductMockups() {
+  // Pakeičiame Figma funkcionalumą į fiktyvius duomenis
+  // Kadangi neplanuojate naudoti Figma, grąžinsime fiktyvius duomenis
   try {
-    const file = await getFigmaFile()
-    
-    // Find the mockups canvas/frame
-    const mockupsFrame = file.data.document.children.find(
-      child => child.name === 'Product Mockups'
-    )
-
-    if (!mockupsFrame || !('children' in mockupsFrame)) {
-      throw new Error('Product Mockups frame not found or has no children')
-    }
-
-    // Get all mockup components
-    const mockups = mockupsFrame.children.filter(
-      child => child.type === 'COMPONENT' || child.type === 'INSTANCE'
-    )
-
-    // Get image URLs for mockups
-    const mockupIds = mockups.map(mockup => mockup.id)
-    const images = await getFigmaImages(mockupIds)
-
-    return mockups.map(mockup => ({
-      id: mockup.id,
-      name: mockup.name,
-      imageUrl: images.data.images[mockup.id]
-    }))
+    // Vietoj Figma API iškviečio, grąžiname fiksuotus duomenis
+    return [
+      {
+        id: 'mock-1',
+        name: 'T-shirt Mockup',
+        imageUrl: '/images/tshirt_light.png'
+      },
+      {
+        id: 'mock-2',
+        name: 'Hoodie Mockup',
+        imageUrl: '/images/hoodie_light.png'
+      }
+    ]
   } catch (error) {
     console.error('Error getting product mockups:', error)
     throw error
