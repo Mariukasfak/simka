@@ -21,13 +21,8 @@
   package = "netlify-plugin-cache-nextjs"
   
   [plugins.inputs]
-  include = [
-    ".next/cache/**",
-    "node_modules/.cache/**"
-  ]
-
-# Vietoje lokalaus optimizavimo plėtinio naudojame tik standartinį NextJS plėtinį
-# nes lokalus plėtinys sukelia klaidą
+  build_dir_path = ".next/cache"
+  custom_build_dir_name = ".next"
 
 # Pridedame serverio funkcijų konfigūraciją
 [functions]
