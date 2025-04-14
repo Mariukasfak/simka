@@ -36,9 +36,10 @@ export default function SmoothDraggableImage({
   const currentPositionRef = useRef(position)
   const rafRef = useRef<number>()
   const lastUpdateRef = useRef<number>(0)
-  const throttleTime = 50 // Padidintas intervalas sklandesniam tempimui (buvo 16ms)
+  const throttleTime = 50 // ms for throttling
   const firstLoadCompleted = useRef(false)
   const imageLoadedRef = useRef(false)
+  const shouldSkipPropUpdate = useRef(false)
 
   // Tikslus spausdinimo zonos centro nustatymas
   const getExactPrintAreaCenter = useCallback(() => {
@@ -58,8 +59,6 @@ export default function SmoothDraggableImage({
     const containerCenterX = container.width / 2;
     const containerCenterY = container.height / 2;
     
-    // Atstumai nuo konteinerio centro iki spausdinimo zonos centro
-    // Tai ir yra mūsų poslinkio vektorius, kad paveikslėlis būtų spausdinimo zonos centre
     return {
       x: printAreaCenterX - containerCenterX,
       y: printAreaCenterY - containerCenterY
@@ -73,10 +72,9 @@ export default function SmoothDraggableImage({
     
     // Gaukime tikslią spausdinimo zonos centro poziciją
     const centerOffset = getExactPrintAreaCenter();
-    console.log("Setting initial position:", centerOffset);
     
-    // Nustatome poziciją į printArea centrą
-    onPositionChange(centerOffset);
+    // Nustatome poziciją į printArea centrą, bet neatnaujinsime state čia
+    // tik atnaujinsime DOM elementą ir ref
     currentPositionRef.current = centerOffset;
     firstLoadCompleted.current = true;
     
@@ -88,6 +86,10 @@ export default function SmoothDraggableImage({
         rotate(${rotation}deg)
       `;
     }
+    
+    // Informuojame tėvinį komponentą apie pradinę poziciją, bet tik kartą
+    shouldSkipPropUpdate.current = true;
+    onPositionChange(centerOffset);
   }, [getExactPrintAreaCenter, onPositionChange, scale, rotation]);
 
   // Ribų nustatymas pagal spausdinimo zoną
@@ -100,8 +102,6 @@ export default function SmoothDraggableImage({
     if (printAreaRef?.current) {
       const printArea = printAreaRef.current.getBoundingClientRect();
       
-      // Apskaičiuojame ribas, kad elementas galėtų būti tempiamas, bet išliktų arti spausdinimo zonos
-      // Pridedame papildomą atstumą, kad būtų galima šiek tiek atitraukti nuo centro, jei reikia
       const margin = Math.max(printArea.width, printArea.height) * 0.5;
       
       // Spausdinimo zonos koordinatės konteinerio sistemoje
@@ -132,7 +132,7 @@ export default function SmoothDraggableImage({
     }
   }, [containerRef, printAreaRef]);
 
-  // Elemento pozicijos atnaujinimas
+  // Elemento pozicijos atnaujinimas - šis metodas nebeturi begalinės kilpos
   const updatePosition = useCallback((x: number, y: number) => {
     if (!elementRef.current) return;
     
@@ -141,19 +141,19 @@ export default function SmoothDraggableImage({
     const boundedY = Math.max(bounds.top, Math.min(bounds.bottom, y));
     
     // Tiesiogiai atnaujiname elemento poziciją sklandžiam judėjimui
-    // Supaprastinta transformacija - naudojame tik translate3d (be translate(-50%, -50%))
     elementRef.current.style.transform = `translate3d(calc(-50% + ${boundedX}px), calc(-50% + ${boundedY}px), 0) scale(${scale}) rotate(${rotation}deg)`;
     
     // Saugome dabartinę poziciją
     currentPositionRef.current = { x: boundedX, y: boundedY };
     
-    // Sumažiname throttling laika sklandesniam judėjimui
+    // Šiek tiek optimizuojame atnaujinimus, kad išvengti begalinio ciklo
     const now = performance.now();
-    if (now - lastUpdateRef.current >= 16) { // 16ms ~ 60fps
-      onPositionChange({ x: boundedX, y: boundedY });
+    if (now - lastUpdateRef.current >= throttleTime) {
+      shouldSkipPropUpdate.current = true;
       lastUpdateRef.current = now;
+      onPositionChange({ x: boundedX, y: boundedY });
     }
-  }, [bounds, scale, rotation, onPositionChange]);
+  }, [bounds, scale, rotation, onPositionChange, throttleTime]);
 
   // Pelės įvykių valdikliai
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -205,10 +205,15 @@ export default function SmoothDraggableImage({
       elementRef.current.style.willChange = 'auto';
     }
     
-    // Galutinis pozicijos atnaujinimas
-    onPositionChange(currentPositionRef.current);
+    // Galutinis pozicijos atnaujinimas, bet tik jei tikrai yra pokyčių
+    const finalPosition = currentPositionRef.current;
+    
     if (onPositionChangeEnd) {
-      onPositionChangeEnd(currentPositionRef.current);
+      shouldSkipPropUpdate.current = true;
+      onPositionChangeEnd(finalPosition);
+    } else {
+      shouldSkipPropUpdate.current = true;
+      onPositionChange(finalPosition);
     }
   }, [onPositionChange, onPositionChangeEnd]);
 
@@ -262,9 +267,14 @@ export default function SmoothDraggableImage({
       elementRef.current.style.willChange = 'auto';
     }
     
-    onPositionChange(currentPositionRef.current);
+    const finalPosition = currentPositionRef.current;
+    
     if (onPositionChangeEnd) {
-      onPositionChangeEnd(currentPositionRef.current);
+      shouldSkipPropUpdate.current = true;
+      onPositionChangeEnd(finalPosition);
+    } else {
+      shouldSkipPropUpdate.current = true;
+      onPositionChange(finalPosition);
     }
   }, [onPositionChange, onPositionChangeEnd]);
 
@@ -278,30 +288,23 @@ export default function SmoothDraggableImage({
     return () => window.removeEventListener('resize', updateBounds);
   }, [updateBounds]);
 
-  // Pozicijos nustatymas pirmo įkėlimo metu
+  // Pozicijos nustatymas pirmo įkėlimo metu - tik vieną kartą
   useEffect(() => {
     // Jei vaizdas jau įkeltas, nustatome pradinę poziciją
     if (imageLoadedRef.current && !firstLoadCompleted.current) {
       setInitialPosition();
     }
 
-    // Kai pasikeičia priklausomybės, galime iš naujo nustatyti poziciją
+    // Kai pasikeičia priklausomybės, atnaujiname ribas, bet ne poziciją
     if (imageLoadedRef.current) {
-      // Atnaujinkime ribas ir poziciją su uždelsimu
-      setTimeout(() => {
-        updateBounds();
-        // Tik pirmo krovimo metu nustatome į centrą
-        if (!firstLoadCompleted.current) {
-          setInitialPosition();
-        }
-      }, 100);
+      updateBounds();
     }
-  }, [printAreaRef, containerRef, setInitialPosition, updateBounds]);
+  }, [printAreaRef?.current, containerRef.current, setInitialPosition, updateBounds]);
 
   // Įvykių valdiklių pridėjimas/pašalinimas
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove, { passive: true });
+      document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       document.addEventListener('touchmove', handleTouchMove, { passive: false });
       document.addEventListener('touchend', handleTouchEnd);
@@ -319,16 +322,44 @@ export default function SmoothDraggableImage({
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
-  // Sinchronizavimas su išoriniais pozicijos pakeitimais
+  // Sinchronizavimas su išoriniais pozicijos pakeitimais, bet tik kai tikrai reikia
   useEffect(() => {
+    // Jei šiuo metu vyksta pozicijos atnaujinimas iš vidaus, praleiskime išorinį atnaujinimą
+    if (shouldSkipPropUpdate.current) {
+      shouldSkipPropUpdate.current = false;
+      return;
+    }
+    
+    // Jei nesikeičia pozicija, neatnaujinkime
+    if (
+      currentPositionRef.current.x === position.x && 
+      currentPositionRef.current.y === position.y &&
+      !isDragging
+    ) {
+      return;
+    }
+    
+    // Kitais atvejais atnaujinkime poziciją
     if (!isDragging) {
       currentPositionRef.current = position;
       if (elementRef.current) {
-        // Naudojame tą pačią transformacijos sintaksę kaip ir updatePosition
         elementRef.current.style.transform = `translate3d(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px), 0) scale(${scale}) rotate(${rotation}deg)`;
       }
     }
   }, [position, scale, rotation, isDragging]);
+
+  // Užkrovus vaizdą, nustatome pradinę poziciją ir atnaujiname ribas
+  const handleImageLoad = useCallback(() => {
+    imageLoadedRef.current = true;
+    
+    // Sumažiname uždelsą, kad greičiau nustatytų
+    if (!firstLoadCompleted.current && containerRef.current && printAreaRef?.current) {
+      requestAnimationFrame(() => {
+        updateBounds();
+        setInitialPosition();
+      });
+    }
+  }, [updateBounds, setInitialPosition, containerRef, printAreaRef]);
 
   return (
     <div
@@ -352,18 +383,7 @@ export default function SmoothDraggableImage({
         alt="Dizaino elementas"
         className="max-w-[200px] max-h-[200px] pointer-events-none select-none"
         draggable={false}
-        onLoad={() => {
-          imageLoadedRef.current = true;
-          
-          // Kai vaizdas įkeltas, nustatome pradinę poziciją
-          if (!firstLoadCompleted.current && containerRef.current && printAreaRef?.current) {
-            // Sumažiname delsą, kad greičiau nustatytų
-            requestAnimationFrame(() => {
-              updateBounds();
-              setInitialPosition();
-            });
-          }
-        }}
+        onLoad={handleImageLoad}
       />
     </div>
   );

@@ -109,24 +109,23 @@ export async function POST(request: Request) {
     
     // Bandome siųsti el. laišką
     try {
-      // Sukonfigūruojame nodemailer tik su būtinais parametrais
+      // Sukonfigūruojame nodemailer pagal Hostinger SMTP nustatymus
       const transporter = nodemailer.createTransport({
-        service: 'gmail', // Naudojame 'service' vietoje 'host'/'port'
+        host: process.env.EMAIL_SERVER || 'smtp.hostinger.com',
+        port: Number(process.env.EMAIL_PORT) || 465,
+        secure: Number(process.env.EMAIL_PORT) === 465, // true naudojant 465 portą
         auth: {
-          user: process.env.EMAIL_USER || 'your-email@gmail.com',
-          pass: process.env.EMAIL_PASSWORD || 'your-app-password',
+          user: process.env.EMAIL_USER || 'labas@siemka.lt',
+          pass: process.env.EMAIL_PASSWORD || 'Simona672as.',
         },
         // Nustatome didesnius timeout parametrus
         connectionTimeout: 10000, // 10 sekundžių
         socketTimeout: 20000, // 20 sekundžių
-        secure: false,
-        tls: {
-          rejectUnauthorized: false // Lokaliam testavimui
-        }
+        debug: true, // Laikinas debuginimas
       });
       
       // Nustatome gavėjo el. paštą su numatyta reikšme
-      const recipientEmail = process.env.EMAIL_TO || "info@siemka.lt";
+      const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
 
       // Sudarome priedų sąrašą
       const attachments = Object.entries(data.designPreviews || {})
@@ -147,7 +146,7 @@ export async function POST(request: Request) {
       
       // Siunčiame el. laišką
       await transporter.sendMail({
-        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "noreply@siemka.lt"}>`,
+        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "labas@siemka.lt"}>`,
         to: recipientEmail,
         subject: `Naujas dizaino užsakymas - ${validatedData.name}`,
         html: emailHtml,
@@ -158,8 +157,6 @@ export async function POST(request: Request) {
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       // Tęsiame vykdymą, net jei el. paštas nepavyko
-      
-      // Alternatyvus el. pašto siuntimas per kitas bibliotekas būtų čia
     }
     
     // Nesvarbu ar pavyko išsiųsti el. paštą ar išsaugoti duomenų bazėje,

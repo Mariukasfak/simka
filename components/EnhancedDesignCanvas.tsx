@@ -8,7 +8,7 @@ import SmoothDraggableImage from './SmoothDraggableImage'
 import type { PrintArea, PrintAreaPosition, DesignState } from '@/lib/types'
 
 interface EnhancedDesignCanvasProps {
-  productImage: string // Pataisyta: priima tik string tipą
+  productImage: string
   uploadedImage: string | null
   designState: DesignState
   onDesignChange: (changes: Partial<DesignState>) => void
@@ -38,6 +38,7 @@ export default function EnhancedDesignCanvas({
   const previewInProgressRef = useRef(false)
   const initialLoadCompleted = useRef(false)
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
+  const skipStateUpdateRef = useRef(false)
   
   // Optimizuotas peržiūros generavimas
   const generatePreview = useCallback(
@@ -63,7 +64,8 @@ export default function EnhancedDesignCanvas({
           allowTaint: true
         });
         
-        const preview = canvas.toDataURL('image/jpeg', 0.8); // Optimizuota kokybė
+        // Išsaugome vaizdą originaliu formatu, kad išlaikytų permatomumą
+        const preview = canvas.toDataURL('image/png', 0.9);
         onPreviewGenerated(preview);
         
         clearTimeout(indicatorTimeout);
@@ -75,27 +77,43 @@ export default function EnhancedDesignCanvas({
         setIsGenerating(false);
         previewInProgressRef.current = false;
       }
-    }, 1000), // Sumažinau delsą iki 1 sekundės
+    }, 800),
     [uploadedImage, onPreviewGenerated]
   )
 
-  // Atnaujinta pozicijos keitimo funkcija
+  // Atnaujinta pozicijos keitimo funkcija - vengiant begalinių atnaujinimų
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
-    // Tiesiog atnaujinome poziciją be papildomo peržiūros generavimo
-    onDesignChange({ position: newPosition, printArea: currentView });
+    if (skipStateUpdateRef.current) {
+      skipStateUpdateRef.current = false;
+      return;
+    }
     
-    // Jei vartotojas pradeda vilkti, išjungiame pradinį patarimą
+    // Išjungiame pradinį patarimą kai vartotojas pirmą kartą keičia poziciją
     if (showInitialTooltip) {
       setShowInitialTooltip(false);
     }
-  }, [onDesignChange, showInitialTooltip, currentView]);
+    
+    // Atnaujiniame poziciją tik jei tikrai reikalinga
+    if (
+      designState.position.x !== newPosition.x || 
+      designState.position.y !== newPosition.y
+    ) {
+      onDesignChange({ position: newPosition });
+    }
+  }, [onDesignChange, showInitialTooltip, designState.position.x, designState.position.y]);
 
   // Šį funkcija naudojame kai reikia sugeneruoti peržiūrą pasibaigus vilkimui
   const handlePositionChangeEnd = useCallback((newPosition: { x: number, y: number }) => {
-    onDesignChange({ position: newPosition, printArea: currentView });
-    // Peržiūrą generuojame tik kartą po pozicijos pasikeitimo
-    generatePreview();
-  }, [onDesignChange, generatePreview, currentView]);
+    // Atnaujiniame poziciją
+    if (
+      designState.position.x !== newPosition.x || 
+      designState.position.y !== newPosition.y
+    ) {
+      onDesignChange({ position: newPosition });
+      // Peržiūrą generuojame tik kartą po pozicijos pasikeitimo
+      generatePreview();
+    }
+  }, [onDesignChange, generatePreview, designState.position.x, designState.position.y]);
 
   // Tikslaus spausdinimo zonos centro skaičiavimas
   const calculatePrintAreaCenterOffset = useCallback(() => {
@@ -129,20 +147,23 @@ export default function EnhancedDesignCanvas({
         position: offset,
         rotation: 0,
         scale: 1,
-        opacity: 1,
-        printArea: currentView
+        opacity: 1
       });
+      
+      // Po pozicijos atstatymo generuojame naują peržiūrą
+      setTimeout(() => {
+        generatePreview();
+      }, 100);
     } else {
       // Jei negalime gauti spausdinimo zonos, naudojame numatytuosius
       onDesignChange({
         position: { x: 0, y: 0 },
         rotation: 0,
         scale: 1,
-        opacity: 1,
-        printArea: currentView
+        opacity: 1
       });
     }
-  }, [onDesignChange, calculatePrintAreaCenterOffset, currentView]);
+  }, [onDesignChange, calculatePrintAreaCenterOffset, generatePreview]);
 
   // Valymas sunaikinant komponentą
   useEffect(() => {
@@ -151,11 +172,12 @@ export default function EnhancedDesignCanvas({
     }
   }, [generatePreview]);
 
-  // Peržiūros generavimas po reikšmingų pakeitimų
+  // Peržiūros generavimas po reikšmingų pakeitimų, bet ne po pozicijos
   useEffect(() => {
+    // Generuojame peržiūrą tik po svarbių pakeitimų
     generatePreview();
   }, [
-    productImage, // Naudojame tiesioginę reikšmę
+    productImage,  
     uploadedImage, 
     designState.scale, 
     designState.opacity, 
@@ -170,6 +192,7 @@ export default function EnhancedDesignCanvas({
       lastViewRef.current = currentView;
       
       // Atnaujinus poziciją, būtinai pergeneruojame peržiūrą
+      // bet su uždelsimu, kad būtų supaprastinta būsenos pasikeitimų seka
       setTimeout(() => {
         generatePreview();
       }, 300);
@@ -181,18 +204,16 @@ export default function EnhancedDesignCanvas({
     const img = new Image();
     img.src = productImage;
     img.onload = () => {
-      // Kai produkto vaizdas įkeliamas, nustatykime logotipo poziciją
+      // Kai produkto vaizdas įkeliamas
       if (uploadedImage && !initialLoadCompleted.current) {
         initialLoadCompleted.current = true;
-        handleReset();
         
-        // Po 500ms generuojame peržiūrą
-        setTimeout(() => {
-          generatePreview();
-        }, 500);
+        // Pirmą kartą atšviežinus būsena - kviečiamas pozicijos atstatymas
+        // bet ne kiekvieną kartą kai keičiamas vaizdas
+        handleReset();
       }
     };
-  }, [productImage, uploadedImage, handleReset, generatePreview]);
+  }, [productImage, uploadedImage, handleReset]);
 
   // Efektas pagalbos patarimui - išjungiame automatiškai po 5 sekundžių
   useEffect(() => {
@@ -204,20 +225,6 @@ export default function EnhancedDesignCanvas({
       return () => clearTimeout(timer);
     }
   }, [showInitialTooltip]);
-
-  // Išsaugome poziciją prieš pakeičiant vaizdą
-  useEffect(() => {
-    // Kai pasikeičia vaizdas, įsitikiname, kad esamos pozicijos yra teisingai išsaugotos
-    return () => {
-      // Šis efektas suveikia prieš pasikeitimą į kitą vaizdą
-      if (designState) {
-        onDesignChange({ 
-          position: designState.position,
-          printArea: currentView 
-        });
-      }
-    };
-  }, [currentView, designState, onDesignChange]);
 
   return (
     <div className="space-y-4">
@@ -252,7 +259,7 @@ export default function EnhancedDesignCanvas({
             max={3}
             step={0.01}
             onChange={(value) => {
-              onDesignChange({ scale: value, printArea: currentView });
+              onDesignChange({ scale: value });
               setShowInitialTooltip(false);
             }}
           />
@@ -273,7 +280,7 @@ export default function EnhancedDesignCanvas({
             max={1}
             step={0.01}
             onChange={(value) => {
-              onDesignChange({ opacity: value, printArea: currentView });
+              onDesignChange({ opacity: value });
               setShowInitialTooltip(false);
             }}
           />
@@ -300,7 +307,7 @@ export default function EnhancedDesignCanvas({
           variant="outline"
           size="sm"
           onClick={() => {
-            onDesignChange({ rotation: designState.rotation - 15, printArea: currentView });
+            onDesignChange({ rotation: designState.rotation - 15 });
             setShowInitialTooltip(false);
           }}
           icon={RotateCcw}
@@ -311,7 +318,7 @@ export default function EnhancedDesignCanvas({
           variant="outline"
           size="sm"
           onClick={() => {
-            onDesignChange({ rotation: designState.rotation + 15, printArea: currentView });
+            onDesignChange({ rotation: designState.rotation + 15 });
             setShowInitialTooltip(false);
           }}
           icon={RotateCw}
@@ -414,7 +421,7 @@ export default function EnhancedDesignCanvas({
       {uploadedImage && !designState.confirmed && (
         <Button
           onClick={() => {
-            onDesignChange({ confirmed: true, printArea: currentView });
+            onDesignChange({ confirmed: true });
             generatePreview();  // Generuojame galutinę peržiūrą patvirtinus
           }}
           variant="default"

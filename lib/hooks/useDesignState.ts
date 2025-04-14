@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { DesignState, PrintAreaPosition } from '@/lib/types'
 
 const initialState: DesignState = {
@@ -23,24 +23,46 @@ export function useDesignState() {
   
   const [currentView, setCurrentView] = useState<PrintAreaPosition>('front')
 
+  // Naudojame ref, kad išvengti begalinio ciklo
+  const skipUpdateRef = useRef(false)
+  const isFirstRender = useRef(true)
+
   // Patogi prieiga prie dabartinės pozicijos dizaino būsenos
   const designState = designStates[currentView]
 
   // Atnaujina tik dabartinės pozicijos dizaino būseną
   const updateDesignState = useCallback((changes: Partial<DesignState>) => {
+    // Jei turime praleisti atnaujinimą (vyksta vidinis atnaujinimas), ignoruojame
+    if (skipUpdateRef.current) {
+      skipUpdateRef.current = false;
+      return;
+    }
+
+    // Išsaugome dabartinę poziciją, jei ji nenustatyta
+    const printArea = changes.printArea || currentView;
+    
     setDesignStates(prev => ({
       ...prev,
-      [currentView]: {
-        ...prev[currentView],
-        ...changes
+      [printArea]: {
+        ...prev[printArea],
+        ...changes,
+        // Visada įsitikiname, kad printArea reikšmė yra teisinga
+        printArea: printArea
       }
     }))
   }, [currentView])
 
-  // Nustatome naują vaizdą ir galimybę gautų esamą vaizdo dizaino būseną
+  // Nustatome naują vaizdą
   const setView = useCallback((view: PrintAreaPosition) => {
-    setCurrentView(view)
-  }, [])
+    // Jei view nesikeitė, nieko nedarome
+    if (view === currentView) return;
+    
+    // Pažymime, kad reikia praleisti kitą atnaujinimą
+    skipUpdateRef.current = true;
+    
+    // Nustatome naują vaizdą
+    setCurrentView(view);
+  }, [currentView])
 
   // Atstatome visų vaizdų dizaino būsenas į pradinę
   const resetDesignState = useCallback(() => {
@@ -56,6 +78,13 @@ export function useDesignState() {
   const getAllDesignStates = useCallback(() => {
     return designStates
   }, [designStates])
+  
+  // Effect'as, kad išvalytų pirmojo rendarinimo žymę
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+    }
+  }, []);
 
   return {
     designState,

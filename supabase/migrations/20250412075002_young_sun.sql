@@ -20,8 +20,14 @@
       - `status` (text)
       - `customer_name` (text)
       - `customer_email` (text)
+      - `customer_phone` (text)
       - `comments` (text)
       - `total_price` (numeric)
+      - `design_states` (jsonb)
+      - `design_previews` (jsonb)
+      - `product_type` (text)
+      - `product_variant` (text)
+      - `product_name` (text)
       - `created_at` (timestamp)
       - `updated_at` (timestamp)
 
@@ -45,14 +51,20 @@ CREATE TABLE IF NOT EXISTS orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES users(id),
   product_id uuid NOT NULL,
-  design_url text NOT NULL,
+  design_url text,
   quantity integer NOT NULL DEFAULT 1,
   size text NOT NULL,
   status text NOT NULL DEFAULT 'pending',
   customer_name text NOT NULL,
   customer_email text NOT NULL,
+  customer_phone text,
   comments text,
   total_price numeric NOT NULL,
+  design_states jsonb,
+  design_previews jsonb,
+  product_type text,
+  product_variant text,
+  product_name text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
