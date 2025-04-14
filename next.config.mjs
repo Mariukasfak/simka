@@ -18,6 +18,18 @@ const nextConfig = {
   experimental: {
     swcMinify: true,
     disableOptimizedLoading: true
+  },
+  // Diegimo greičio optimizacijos
+  poweredByHeader: false,
+  compress: true,
+  productionBrowserSourceMaps: false,
+  optimizeFonts: true,
+  staticPageGenerationTimeout: 120,
+  distDir: '.next', // Užtikrina kad būtų naudojamas teisingas direktorijos pavadinimas
+  // Optimizavimas cache naudojimui
+  onDemandEntries: {
+    maxInactiveAge: 60 * 60 * 1000, // 1 valanda (ms)
+    pagesBufferLength: 5
   }
 }
 

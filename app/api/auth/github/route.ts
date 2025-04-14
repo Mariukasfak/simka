@@ -16,18 +16,27 @@ export async function GET() {
   }
 
   try {
+    // Patikrinam ar REDIRECT_URI yra validus URL
+    try {
+      new URL(REDIRECT_URI)
+    } catch (urlError) {
+      console.error('Invalid REDIRECT_URI:', REDIRECT_URI, urlError)
+      return NextResponse.json(
+        { error: 'Invalid redirect URI configuration' },
+        { status: 500 }
+      )
+    }
+
     const params = new URLSearchParams({
       client_id: GITHUB_CLIENT_ID,
       redirect_uri: REDIRECT_URI,
       scope: 'read:user user:email',
     })
 
-    // Užtikriname, kad URL yra teisingai suformuotas
+    // Užtikriname, kad URL yra teisingai suformuotas - naudojam saugesnį būdą
     const githubAuthUrl = `https://github.com/login/oauth/authorize?${params.toString()}`
     
-    // Patikriname, ar URL yra validus
-    new URL(githubAuthUrl) // Jei URL yra nevalidus, čia bus išmesta klaida
-    
+    // Nebereikia atskiro URL testavimo, nes https://github.com/ yra žinomas validus URL
     return NextResponse.redirect(githubAuthUrl)
   } catch (error) {
     console.error('Error creating GitHub auth URL:', error)
