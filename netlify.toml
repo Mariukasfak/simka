@@ -26,9 +26,8 @@
     "node_modules/.cache/**"
   ]
 
-# Naudojame lokalų optimizavimo plėtinį
-[[plugins]]
-  package = "/opt/build/repo/netlify/plugins/nextjs-optimizer"
+# Vietoje lokalaus optimizavimo plėtinio naudojame tik standartinį NextJS plėtinį
+# nes lokalus plėtinys sukelia klaidą
 
 # Pridedame serverio funkcijų konfigūraciją
 [functions]
