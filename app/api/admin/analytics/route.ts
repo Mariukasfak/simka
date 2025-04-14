@@ -4,6 +4,9 @@ import { cookies } from 'next/headers'
 import { AnalyticsData } from '@/lib/types'
 import { subDays, startOfDay, endOfDay } from 'date-fns'
 
+// Nurodome Next.js, kad šis maršrutas turi būti dinaminis
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies })

@@ -33,12 +33,10 @@ const nextConfig = {
   },
   // Išjungiame automatinį statinį generavimą puslapiams su dinaminiu turiniu
   output: 'standalone',
-  // Nustatome metadataBase URL, kad išvengtume įspėjimų
-  metadata: {
-    metadataBase: new URL('https://siemka-design-tool.netlify.app'),
-  },
   // Netlify diegimui reikalingi nustatymai
-  trailingSlash: false
+  trailingSlash: false,
+  // Teisingas metaduomenų bazinio URL nustatymas
+  assetPrefix: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 }
 
 export default nextConfig

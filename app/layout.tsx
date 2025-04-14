@@ -4,9 +4,13 @@ import { Toaster } from 'react-hot-toast'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
+// Teisingas metadataBase nustatymas
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
 export const metadata: Metadata = {
   title: 'Susikurk savo dizainą | Siemka.lt',
   description: 'Interaktyvus įrankis, leidžiantis susikurti unikalius marškinėlius ar džemperius su savo logotipu.',
+  metadataBase: new URL(baseUrl),
   openGraph: {
     title: 'Susikurk savo marškinėlių dizainą',
     description: 'Įkelk savo logotipą ir matyk, kaip jis atrodys ant rūbų.',
