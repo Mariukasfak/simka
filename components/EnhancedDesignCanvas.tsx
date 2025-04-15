@@ -1,10 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import html2canvas from 'html2canvas'
-import { RefreshCw, RotateCw, RotateCcw, HelpCircle, X } from 'lucide-react'
+import { RefreshCw, RotateCw, RotateCcw, HelpCircle, X, Lock, Unlock } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Slider } from './ui/Slider'
-import SmoothDraggableImage from './SmoothDraggableImage'
+import RelativePositionDraggableImage from './RelativePositionDraggableImage'
+import DesignDebugger from './DesignDebugger'
 import type { PrintArea, PrintAreaPosition, DesignState } from '@/lib/types'
 
 interface EnhancedDesignCanvasProps {
@@ -35,6 +36,7 @@ export default function EnhancedDesignCanvas({
   const [error, setError] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
   const [showInitialTooltip, setShowInitialTooltip] = useState(true)
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   const previewInProgressRef = useRef(false)
   const initialLoadCompleted = useRef(false)
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
@@ -43,33 +45,59 @@ export default function EnhancedDesignCanvas({
   
   // Optimizuotas peržiūros generavimas
   const generatePreview = useCallback(
-    debounce(async () => {
-      if (!canvasRef.current || !uploadedImage || previewInProgressRef.current) {
+    debounce(async (forceGenerate = false) => {
+      if (!canvasRef.current || !uploadedImage || (previewInProgressRef.current && !forceGenerate)) {
         return;
       }
 
       try {
         previewInProgressRef.current = true;
-        // Įjungiame generavimo indikatorių tik jei ilgiau nei 500ms
-        const indicatorTimeout = setTimeout(() => {
-          setIsGenerating(true);
-        }, 500);
-        
+        setIsGenerating(true);
         setError(null);
         
-        const canvas = await html2canvas(canvasRef.current, {
+        // Sukuriame tikslią kopiją, kurią naudosime peržiūrai
+        const originalCanvas = canvasRef.current;
+        const previewContainer = document.createElement('div');
+        previewContainer.style.position = 'absolute';
+        previewContainer.style.left = '-9999px';
+        previewContainer.style.width = originalCanvas.offsetWidth + 'px';
+        previewContainer.style.height = originalCanvas.offsetHeight + 'px';
+        document.body.appendChild(previewContainer);
+        
+        // Kopijuojame originalų turinį
+        previewContainer.innerHTML = originalCanvas.innerHTML;
+        
+        // Suraskime logotipo elementą ir pritaikykime tiksliai tokią pačią transformaciją
+        const originalLogo = originalCanvas.querySelector('.draggable-image');
+        const previewLogo = previewContainer.querySelector('.draggable-image');
+        
+        if (originalLogo && previewLogo) {
+          previewLogo.style.transform = originalLogo.style.transform;
+          previewLogo.style.opacity = originalLogo.style.opacity;
+        }
+        
+        // Generuojame peržiūrą naudodami naujai sukurtą konteinerį
+        const canvas = await html2canvas(previewContainer, {
           backgroundColor: null,
-          scale: 1.5, // Geresniam balansui tarp kokybės ir našumo
+          scale: 1.5,
           logging: false,
           useCORS: true,
-          allowTaint: true
+          allowTaint: true,
+          // Neliesti transformacijos
+          onclone: (clonedDoc, clonedElem) => {
+            const clonedLogo = clonedElem.querySelector('.draggable-image');
+            if (clonedLogo && originalLogo) {
+              clonedLogo.style.transform = originalLogo.style.transform;
+            }
+          }
         });
         
-        // Išsaugome vaizdą PNG formatu, kad išlaikytų permatomumą
+        // Išvalome laikiną konteinerį
+        document.body.removeChild(previewContainer);
+        
+        // Išsaugome peržiūrą
         const preview = canvas.toDataURL('image/png', 0.9);
         onPreviewGenerated(preview);
-        
-        clearTimeout(indicatorTimeout);
       } catch (error) {
         console.error('Peržiūros generavimo klaida:', error);
         setError('Nepavyko sugeneruoti peržiūros');
@@ -81,6 +109,122 @@ export default function EnhancedDesignCanvas({
     }, 800),
     [uploadedImage, onPreviewGenerated]
   )
+
+  // Avarinė funkcija visoms peržiūroms regeneruoti
+  const forceRegenerateAllPreviews = useCallback(async () => {
+    if (!canvasRef.current || !uploadedImage) {
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    // Sukaupkime visas pozicijas ir suraskime problemą
+    const positionLog = {
+      currentView,
+      designState,
+      canvasSize: canvasRef.current?.getBoundingClientRect(),
+      printAreaSize: printAreaRef.current?.getBoundingClientRect(),
+      windowSize: { width: window.innerWidth, height: window.innerHeight },
+      cssStyles: {
+        position: designState.position,
+        scale: designState.scale,
+        rotation: designState.rotation,
+        opacity: designState.opacity,
+        relativePrintAreaPosition: designState.relativePrintAreaPosition
+      }
+    };
+    
+    console.log('DEBUG: Pozicijos diagnozė', positionLog);
+    
+    try {
+      // Sukuriame tikslią kopiją, kurią naudosime peržiūrai
+      const originalCanvas = canvasRef.current;
+      const previewContainer = document.createElement('div');
+      previewContainer.style.position = 'absolute';
+      previewContainer.style.left = '-9999px';
+      previewContainer.style.width = originalCanvas.offsetWidth + 'px';
+      previewContainer.style.height = originalCanvas.offsetHeight + 'px';
+      document.body.appendChild(previewContainer);
+      
+      // Kopijuojame originalų turinį
+      previewContainer.innerHTML = originalCanvas.innerHTML;
+      
+      // Suraskime logotipo elementą 
+      const originalLogo = originalCanvas.querySelector('.draggable-image');
+      const previewLogo = previewContainer.querySelector('.draggable-image');
+      
+      if (originalLogo && previewLogo) {
+        // Išsaugome originalią transformaciją
+        const originalTransform = originalLogo.style.transform;
+        console.log('Originali transformacija:', originalTransform);
+        
+        // Tiesiogiai nustatome transformaciją pagal santykinę poziciją
+        if (designState.relativePrintAreaPosition && printAreaRef.current) {
+          const printArea = printAreaRef.current.getBoundingClientRect();
+          const container = canvasRef.current.getBoundingClientRect();
+          
+          // Apskaičiuojame tikslų atstumą nuo printArea viršutinio kairiojo kampo
+          const relPos = designState.relativePrintAreaPosition;
+          const xInPrintArea = (relPos.xPercent / 100) * printArea.width;
+          const yInPrintArea = (relPos.yPercent / 100) * printArea.height;
+          
+          // Apskaičiuojame absoliučią poziciją canvasRef koordinačių sistemoje
+          const printAreaLeft = printArea.left - container.left;
+          const printAreaTop = printArea.top - container.top;
+          
+          const xFromLeft = printAreaLeft + xInPrintArea;
+          const yFromTop = printAreaTop + yInPrintArea;
+          
+          // Atstatome atstumą nuo centro
+          const xFromCenter = xFromLeft - (container.width / 2);
+          const yFromCenter = yFromTop - (container.height / 2);
+          
+          // Taikome naują transformaciją
+          previewLogo.style.transform = `
+            translate3d(calc(-50% + ${xFromCenter}px), calc(-50% + ${yFromCenter}px), 0) 
+            scale(${designState.scale}) 
+            rotate(${designState.rotation}deg)
+          `;
+          
+          console.log('Nauja transformacija pagal santykines koordinates:', previewLogo.style.transform);
+        } else {
+          // Jei nėra santykinių koordinačių, naudojame originalią transformaciją
+          previewLogo.style.transform = originalTransform;
+        }
+        
+        previewLogo.style.opacity = String(designState.opacity);
+      }
+      
+      // Generuojame peržiūrą
+      const canvas = await html2canvas(previewContainer, {
+        backgroundColor: null,
+        scale: 1.5,
+        logging: true,
+        useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc, clonedElem) => {
+          const clonedLogo = clonedElem.querySelector('.draggable-image');
+          if (clonedLogo && previewLogo) {
+            clonedLogo.style.transform = previewLogo.style.transform;
+          }
+        }
+      });
+      
+      // Išvalome laikiną konteinerį
+      document.body.removeChild(previewContainer);
+      
+      // Išsaugome peržiūrą
+      const preview = canvas.toDataURL('image/png', 0.9);
+      onPreviewGenerated(preview);
+      
+      console.log('Peržiūra sėkmingai regeneruota');
+    } catch (error) {
+      console.error('Regeneravimo klaida:', error);
+      setError('Nepavyko regeneruoti peržiūros');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [canvasRef, printAreaRef, uploadedImage, currentView, designState, onPreviewGenerated]);
 
   // Atnaujinta pozicijos keitimo funkcija - vengiant begalinių atnaujinimų
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
@@ -111,6 +255,41 @@ export default function EnhancedDesignCanvas({
     }, 50);
   }, [onDesignChange, showInitialTooltip, designState.position.x, designState.position.y]);
 
+  // Santykinės pozicijos keitimo apdorojimui
+  const handleRelativePositionChange = useCallback((relPosition: { xPercent: number, yPercent: number }) => {
+    if (skipStateUpdateRef.current) {
+      skipStateUpdateRef.current = false;
+      return;
+    }
+    
+    // Išjungiame pradinį patarimą kai vartotojas pirmą kartą keičia poziciją
+    if (showInitialTooltip) {
+      setShowInitialTooltip(false);
+    }
+    
+    // Neleidžiame atnaujinti, jei jau vyksta atnaujinimas
+    if (positionUpdateTimeoutRef.current) {
+      clearTimeout(positionUpdateTimeoutRef.current);
+    }
+    
+    // Atnaujiname santykinę poziciją su uždelsimu, kad sumažintume atnaujinimų skaičių
+    positionUpdateTimeoutRef.current = setTimeout(() => {
+      // Patikriname, ar reikia atnaujinti - jei santykinė pozicija pasikeitė
+      const currentRelPos = designState.relativePrintAreaPosition || { xPercent: 50, yPercent: 50 };
+      
+      if (
+        currentRelPos.xPercent !== relPosition.xPercent || 
+        currentRelPos.yPercent !== relPosition.yPercent
+      ) {
+        onDesignChange({
+          relativePrintAreaPosition: relPosition
+        });
+      }
+      
+      positionUpdateTimeoutRef.current = null;
+    }, 50);
+  }, [onDesignChange, showInitialTooltip, designState.relativePrintAreaPosition]);
+
   // Šį funkcija naudojame kai reikia sugeneruoti peržiūrą pasibaigus vilkimui
   const handlePositionChangeEnd = useCallback((newPosition: { x: number, y: number }) => {
     // Atnaujiniame poziciją
@@ -123,6 +302,25 @@ export default function EnhancedDesignCanvas({
       generatePreview();
     }
   }, [onDesignChange, generatePreview, designState.position.x, designState.position.y]);
+
+  // Santykinės pozicijos pakeitimo pabaigos apdorojimui
+  const handleRelativePositionChangeEnd = useCallback((relPosition: { xPercent: number, yPercent: number }) => {
+    // Patikriname ar santykinė pozicija pasikeitė
+    const currentRelPos = designState.relativePrintAreaPosition || { xPercent: 50, yPercent: 50 };
+    
+    if (
+      currentRelPos.xPercent !== relPosition.xPercent || 
+      currentRelPos.yPercent !== relPosition.yPercent
+    ) {
+      // Atnaujiname santykinę poziciją ir generuojame peržiūrą
+      onDesignChange({
+        relativePrintAreaPosition: relPosition
+      });
+      
+      // Generuojame peržiūrą po pozicijos pakeitimo
+      generatePreview();
+    }
+  }, [onDesignChange, generatePreview, designState.relativePrintAreaPosition]);
 
   // Tikslaus spausdinimo zonos centro skaičiavimas
   const calculatePrintAreaCenterOffset = useCallback(() => {
@@ -340,6 +538,19 @@ export default function EnhancedDesignCanvas({
         <Button
           variant="outline"
           size="sm"
+          onClick={() => {
+            onDesignChange({ locked: !designState.locked });
+            setShowInitialTooltip(false);
+            // Peržiūrą generuojame, kad atsinaujintų ir užrakto indikatoriaus vaizdas
+            generatePreview();
+          }}
+          icon={designState.locked ? Unlock : Lock}
+        >
+          {designState.locked ? 'Atrakinti' : 'Užrakinti'}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setShowHelp(true)}
           icon={HelpCircle}
         >
@@ -382,17 +593,21 @@ export default function EnhancedDesignCanvas({
         
         {uploadedImage && (
           <>
-            <SmoothDraggableImage
+            <RelativePositionDraggableImage
               imageUrl={uploadedImage}
               position={designState.position}
+              relativePosition={designState.relativePrintAreaPosition}
               scale={designState.scale}
               opacity={designState.opacity}
               rotation={designState.rotation}
               onPositionChange={handlePositionChange}
+              onRelativePositionChange={handleRelativePositionChange}
               onPositionChangeEnd={handlePositionChangeEnd}
+              onRelativePositionChangeEnd={handleRelativePositionChangeEnd}
               containerRef={canvasRef}
               printAreaRef={printAreaRef}
-              currentView={currentView} // Perduodame dabartinį vaizdą į SmoothDraggableImage
+              currentView={currentView}
+              locked={designState.locked}
             />
             
             {/* Pradinis patarimas kaip redaguoti dizainą */}
@@ -425,6 +640,48 @@ export default function EnhancedDesignCanvas({
         <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
+      {/* Derinimo informacija apie santykinę poziciją - rodoma tik kūrimo aplinkoje */}
+      {process.env.NODE_ENV === 'development' && designState.relativePrintAreaPosition && (
+        <div className="mt-2 p-2 bg-gray-100 text-xs text-gray-700 rounded">
+          <div className="flex justify-between">
+            <span>RelX: {Math.round(designState.relativePrintAreaPosition.xPercent)}%</span>
+            <span>RelY: {Math.round(designState.relativePrintAreaPosition.yPercent)}%</span>
+            <span>{designState.locked ? '🔒 Užrakinta' : '🔓 Atrakinta'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Derinimo mygtukai rodomi tik kūrimo aplinkoje */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-2 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDebugInfo(!showDebugInfo)}
+            className="text-xs"
+          >
+            {showDebugInfo ? 'Išjungti derinimą' : 'Įjungti derinimą'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={forceRegenerateAllPreviews}
+            className="text-xs bg-amber-50"
+          >
+            Priverstinai regeneruoti peržiūrą
+          </Button>
+        </div>
+      )}
+      
+      {/* DesignDebugger komponentas rodo tikslią pozicijos informaciją */}
+      <DesignDebugger
+        designState={designState}
+        printArea={printAreas[currentView]}
+        containerRef={canvasRef}
+        printAreaRef={printAreaRef}
+        visible={showDebugInfo}
+      />
+
       {error && (
         <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md">
           {error}

@@ -20,7 +20,7 @@ export interface Design {
   id: string;
   imageUrl: string;
   position: { x: number; y: number };
-  relativePosition?: { xPercent: number; yPercent: number }; // Pridėta santykinė pozicija
+  relativePrintAreaPosition?: { xPercent: number; yPercent: number }; // Atnaujinta į vieningą pavadinimą
   scale: number;
   opacity: number;
   rotation: number;
@@ -31,7 +31,7 @@ export interface Design {
 
 export interface DesignState {
   position: { x: number; y: number };
-  relativePosition?: { xPercent: number; yPercent: number }; // Pridėta santykinė pozicija
+  relativePrintAreaPosition?: { xPercent: number; yPercent: number }; // Atnaujinta į vieningą pavadinimą
   scale: number;
   opacity: number;
   rotation: number;

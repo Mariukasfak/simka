@@ -80,15 +80,33 @@ export default function RelativePositionDraggableImage({
 
   // Konvertuoja absoliučią poziciją į santykinę
   const absoluteToRelativePosition = useCallback((absPos: DesignPosition): { xPercent: number, yPercent: number } => {
-    const { width, height } = containerDimensionsRef.current;
-    if (width === 0 || height === 0) return { xPercent: 50, yPercent: 50 };
+    if (!containerRef.current || !printAreaRef?.current) {
+      return { xPercent: 50, yPercent: 50 };
+    }
     
-    // Apskaičiuojame santykines koordinates
-    const xPercent = ((absPos.x + width / 2) / width) * 100;
-    const yPercent = ((absPos.y + height / 2) / height) * 100;
+    const container = containerRef.current.getBoundingClientRect();
+    const printArea = printAreaRef.current.getBoundingClientRect();
     
-    return { xPercent, yPercent };
-  }, []);
+    // PATOBULINTA: Skaičiuojame santykinę poziciją printArea ribose
+    // Ši formulė užtikrina, kad pozicija būtų išreikšta procentais nuo printArea viršutinio kairiojo kampo
+    const printAreaLeft = printArea.left - container.left;
+    const printAreaTop = printArea.top - container.top;
+    
+    // Skaičiuojame logotipo centro poziciją container koordinačių sistemoje
+    const logoCenter = {
+      x: absPos.x + (container.width / 2), // Pridedame pusę container pločio, nes absPos yra atstumas nuo centro
+      y: absPos.y + (container.height / 2)  // Pridedame pusę container aukščio, nes absPos yra atstumas nuo centro
+    };
+    
+    // Skaičiuojame santykinę poziciją printArea viduje
+    const xPercent = ((logoCenter.x - printAreaLeft) / printArea.width) * 100;
+    const yPercent = ((logoCenter.y - printAreaTop) / printArea.height) * 100;
+    
+    return { 
+      xPercent: Math.min(100, Math.max(0, xPercent)), 
+      yPercent: Math.min(100, Math.max(0, yPercent)) 
+    };
+  }, [containerRef, printAreaRef]);
 
   // Tikslus spausdinimo zonos centro nustatymas - dabar su santykine pozicija
   const getExactPrintAreaCenter = useCallback(() => {

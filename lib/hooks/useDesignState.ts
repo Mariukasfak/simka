@@ -6,6 +6,7 @@ import { PRINT_AREAS } from '@/lib/constants'
 
 const initialState: DesignState = {
   position: { x: 0, y: 0 },
+  relativePrintAreaPosition: { xPercent: 50, yPercent: 50 },
   scale: 1,
   opacity: 1,
   rotation: 0,
@@ -53,11 +54,16 @@ export function useDesignState() {
   const skipUpdateRef = useRef(false)
   const isFirstRender = useRef(true)
   const previousViewRef = useRef<PrintAreaPosition>('front')
-  const positionRatiosRef = useRef<Record<PrintAreaPosition, { x: number, y: number }>>({
-    'front': { x: 0, y: 0 },
-    'back': { x: 0, y: 0 },
-    'left-sleeve': { x: 0, y: 0 },
-    'right-sleeve': { x: 0, y: 0 }
+  const positionRatiosRef = useRef<Record<PrintAreaPosition, { 
+    x: number, 
+    y: number,
+    xPercent: number,
+    yPercent: number 
+  }>>({
+    'front': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+    'back': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+    'left-sleeve': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+    'right-sleeve': { x: 0, y: 0, xPercent: 50, yPercent: 50 }
   });
 
   // Patogi prieiga prie dabartinės pozicijos dizaino būsenos
@@ -82,9 +88,22 @@ export function useDesignState() {
         // Išsaugome santykį tarp pozicijos ir spausdinimo ploto dydžio
         positionRatiosRef.current[printArea] = {
           x: changes.position.x / (width / 100),
-          y: changes.position.y / (height / 100)
+          y: changes.position.y / (height / 100),
+          xPercent: changes.relativePrintAreaPosition?.xPercent || 
+                   (changes.position.x + (width / 2)) / width * 100,
+          yPercent: changes.relativePrintAreaPosition?.yPercent ||
+                   (changes.position.y + (height / 2)) / height * 100
         };
       }
+    }
+    
+    // Jei pateikta nauja santykinė pozicija, naudojame ją
+    if (changes.relativePrintAreaPosition) {
+      positionRatiosRef.current[printArea] = {
+        ...positionRatiosRef.current[printArea],
+        xPercent: changes.relativePrintAreaPosition.xPercent,
+        yPercent: changes.relativePrintAreaPosition.yPercent
+      };
     }
     
     setDesignStates(prev => ({
@@ -92,7 +111,6 @@ export function useDesignState() {
       [printArea]: {
         ...prev[printArea],
         ...changes,
-        // Visada įsitikiname, kad printArea reikšmė yra teisinga
         printArea: printArea
       }
     }))
@@ -106,42 +124,43 @@ export function useDesignState() {
     // Išsaugome dabartinį vaizdą prieš jį pakeičiant
     previousViewRef.current = currentView;
     
-    // Nustatome naują vaizdą
-    setCurrentView(view);
+    const sourcePrintArea = PRINT_AREAS[previousViewRef.current];
+    const targetPrintArea = PRINT_AREAS[view];
     
-    // Apskaičiuojame naują poziciją pagal išsaugotas santykines vertes
-    const ratio = positionRatiosRef.current[previousViewRef.current];
-    const targetPrintAreaBounds = PRINT_AREAS[view].bounds;
-    
-    if (ratio && targetPrintAreaBounds) {
-      // Apskaičiuojame naują poziciją santykinai pagal naują spausdinimo plotą
+    if (sourcePrintArea && targetPrintArea) {
+      const currentDesign = designStates[previousViewRef.current];
+      const relPosition = positionRatiosRef.current[previousViewRef.current];
+      
       const newPosition = {
-        x: ratio.x * (targetPrintAreaBounds.width / 100),
-        y: ratio.y * (targetPrintAreaBounds.height / 100)
+        x: (relPosition.xPercent / 100) * targetPrintArea.bounds.width - (targetPrintArea.bounds.width / 2),
+        y: (relPosition.yPercent / 100) * targetPrintArea.bounds.height - (targetPrintArea.bounds.height / 2)
       };
       
-      // Užtikrinkime, kad šis atnaujinimas nesukeltų begalinio ciklo
       skipUpdateRef.current = true;
       
-      // Atnaujiname poziciją naujam vaizdui
       setDesignStates(prev => ({
         ...prev,
         [view]: {
           ...prev[view],
-          position: newPosition
+          position: newPosition,
+          relativePrintAreaPosition: {
+            xPercent: relPosition.xPercent,
+            yPercent: relPosition.yPercent
+          }
         }
       }));
     }
-  }, [currentView])
+    
+    setCurrentView(view);
+  }, [currentView, designStates])
 
   // Atstatome visų vaizdų dizaino būsenas į pradinę
   const resetDesignState = useCallback(() => {
-    // Taip pat atstatome ir santykines pozicijas
     positionRatiosRef.current = {
-      'front': { x: 0, y: 0 },
-      'back': { x: 0, y: 0 },
-      'left-sleeve': { x: 0, y: 0 },
-      'right-sleeve': { x: 0, y: 0 }
+      'front': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+      'back': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+      'left-sleeve': { x: 0, y: 0, xPercent: 50, yPercent: 50 },
+      'right-sleeve': { x: 0, y: 0, xPercent: 50, yPercent: 50 }
     };
     
     setDesignStates({
