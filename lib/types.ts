@@ -20,25 +20,34 @@ export interface Design {
   id: string;
   imageUrl: string;
   position: { x: number; y: number };
+  relativePosition?: { xPercent: number; yPercent: number }; // Pridėta santykinė pozicija
   scale: number;
   opacity: number;
   rotation: number;
   printArea: PrintAreaPosition;
   confirmed: boolean;
+  locked?: boolean; // Pridėta užrakinimo savybė
 }
 
 export interface DesignState {
   position: { x: number; y: number };
+  relativePosition?: { xPercent: number; yPercent: number }; // Pridėta santykinė pozicija
   scale: number;
   opacity: number;
   rotation: number;
   printArea: PrintAreaPosition;
   confirmed: boolean;
+  locked?: boolean; // Pridėta užrakinimo savybė
 }
 
 export interface DesignPosition {
   x: number;
   y: number;
+}
+
+export interface RelativePosition {
+  xPercent: number;
+  yPercent: number;
 }
 
 // Product types
