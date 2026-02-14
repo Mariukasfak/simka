@@ -78,16 +78,27 @@ export default function ProductSelector({
         ))}
       </div>
 
-      <div className="mt-4 p-4 bg-brand-50 rounded-lg">
-        <h3 className="text-sm font-medium text-brand-900">
-          Produkto informacija
-        </h3>
-        <div className="mt-2 text-sm text-brand-600">
-          <p>Medžiaga: 100% medvilnė</p>
-          <p>Svoris: 280 g/m²</p>
-          <p>Priežiūra: Skalbti 30°C temperatūroje</p>
+      {selectedProduct.description ? (
+        <div className="mt-4 p-4 bg-brand-50 rounded-lg">
+          <h3 className="text-sm font-medium text-brand-900">
+            Apie produktą
+          </h3>
+          <p className="mt-2 text-sm text-brand-600">
+            {selectedProduct.description}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 p-4 bg-brand-50 rounded-lg">
+          <h3 className="text-sm font-medium text-brand-900">
+            Produkto informacija
+          </h3>
+          <div className="mt-2 text-sm text-brand-600">
+            <p>Medžiaga: 100% medvilnė</p>
+            <p>Svoris: 280 g/m²</p>
+            <p>Priežiūra: Skalbti 30°C temperatūroje</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

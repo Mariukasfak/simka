@@ -4,16 +4,7 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { generateEmailHtml } from './email-utils';
-
-// Formų validacijos schema
-const orderFormSchema = z.object({
-  name: z.string().min(2, { message: "Vardas turi būti bent 2 simbolių ilgio" }),
-  email: z.string().email({ message: "Neteisingas el. pašto formatas" }),
-  phone: z.string().optional(),
-  size: z.string().min(1, { message: "Pasirinkite dydį" }),
-  quantity: z.number().min(1, { message: "Kiekis turi būti bent 1" }).max(1000),
-  comments: z.string().optional(),
-});
+import { orderFormSchema } from '../../../lib/validations/order';
 
 // Nurodome Next.js, kad šis maršrutas turi būti dinaminis
 export const dynamic = 'force-dynamic';

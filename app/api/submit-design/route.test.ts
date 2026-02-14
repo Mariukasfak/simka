@@ -69,6 +69,7 @@ describe('Submit Design API', () => {
     process.env.EMAIL_USER = 'user@example.com';
     process.env.EMAIL_PASSWORD = 'password';
     process.env.EMAIL_FROM = 'noreply@example.com';
+    process.env.EMAIL_TO = 'recipient@example.com';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
 
