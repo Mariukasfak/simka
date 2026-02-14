@@ -41,7 +41,19 @@ export default function EnhancedDesignCanvas({
   const initialLoadCompleted = useRef(false)
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
   const skipStateUpdateRef = useRef(false)
-  const positionUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // ⚡ PERFORMANCE: Local state for smooth dragging without re-rendering parent
+  const [dragPosition, setDragPosition] = useState(designState.position)
+  const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
+  const isDraggingRef = useRef(false)
+
+  // ⚡ PERFORMANCE: Sync local state with props when NOT dragging
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setDragPosition(designState.position)
+      setDragRelativePosition(designState.relativePrintAreaPosition)
+    }
+  }, [designState.position, designState.relativePrintAreaPosition])
   
   // Optimizuotas peržiūros generavimas
   const generatePreview = useCallback(
@@ -226,72 +238,44 @@ export default function EnhancedDesignCanvas({
     }
   }, [canvasRef, printAreaRef, uploadedImage, currentView, designState, onPreviewGenerated]);
 
-  // Atnaujinta pozicijos keitimo funkcija - vengiant begalinių atnaujinimų
+  // ⚡ PERFORMANCE: Update only local state during drag
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
     if (skipStateUpdateRef.current) {
       skipStateUpdateRef.current = false;
       return;
     }
     
+    isDraggingRef.current = true;
+
     // Išjungiame pradinį patarimą kai vartotojas pirmą kartą keičia poziciją
     if (showInitialTooltip) {
       setShowInitialTooltip(false);
     }
 
-    // Atšaukiame ankstesnį timeout, jei toks buvo
-    if (positionUpdateTimeoutRef.current) {
-      clearTimeout(positionUpdateTimeoutRef.current);
-    }
-    
-    // Atnaujiniame poziciją tik jei tikrai reikalinga, su stabilizavimo delsa
-    positionUpdateTimeoutRef.current = setTimeout(() => {
-      if (
-        designState.position.x !== newPosition.x || 
-        designState.position.y !== newPosition.y
-      ) {
-        onDesignChange({ position: newPosition });
-      }
-      positionUpdateTimeoutRef.current = null;
-    }, 50);
-  }, [onDesignChange, showInitialTooltip, designState.position.x, designState.position.y]);
+    setDragPosition(newPosition);
+  }, [showInitialTooltip]);
 
-  // Santykinės pozicijos keitimo apdorojimui
+  // ⚡ PERFORMANCE: Update only local state during drag
   const handleRelativePositionChange = useCallback((relPosition: { xPercent: number, yPercent: number }) => {
     if (skipStateUpdateRef.current) {
       skipStateUpdateRef.current = false;
       return;
     }
     
+    isDraggingRef.current = true;
+
     // Išjungiame pradinį patarimą kai vartotojas pirmą kartą keičia poziciją
     if (showInitialTooltip) {
       setShowInitialTooltip(false);
     }
     
-    // Neleidžiame atnaujinti, jei jau vyksta atnaujinimas
-    if (positionUpdateTimeoutRef.current) {
-      clearTimeout(positionUpdateTimeoutRef.current);
-    }
-    
-    // Atnaujiname santykinę poziciją su uždelsimu, kad sumažintume atnaujinimų skaičių
-    positionUpdateTimeoutRef.current = setTimeout(() => {
-      // Patikriname, ar reikia atnaujinti - jei santykinė pozicija pasikeitė
-      const currentRelPos = designState.relativePrintAreaPosition || { xPercent: 50, yPercent: 50 };
-      
-      if (
-        currentRelPos.xPercent !== relPosition.xPercent || 
-        currentRelPos.yPercent !== relPosition.yPercent
-      ) {
-        onDesignChange({
-          relativePrintAreaPosition: relPosition
-        });
-      }
-      
-      positionUpdateTimeoutRef.current = null;
-    }, 50);
-  }, [onDesignChange, showInitialTooltip, designState.relativePrintAreaPosition]);
+    setDragRelativePosition(relPosition);
+  }, [showInitialTooltip]);
 
-  // Šį funkcija naudojame kai reikia sugeneruoti peržiūrą pasibaigus vilkimui
+  // ⚡ PERFORMANCE: Update parent state only on drag end
   const handlePositionChangeEnd = useCallback((newPosition: { x: number, y: number }) => {
+    isDraggingRef.current = false;
+
     // Atnaujiniame poziciją
     if (
       designState.position.x !== newPosition.x || 
@@ -303,8 +287,10 @@ export default function EnhancedDesignCanvas({
     }
   }, [onDesignChange, generatePreview, designState.position.x, designState.position.y]);
 
-  // Santykinės pozicijos pakeitimo pabaigos apdorojimui
+  // ⚡ PERFORMANCE: Update parent state only on drag end
   const handleRelativePositionChangeEnd = useCallback((relPosition: { xPercent: number, yPercent: number }) => {
+    isDraggingRef.current = false;
+
     // Patikriname ar santykinė pozicija pasikeitė
     const currentRelPos = designState.relativePrintAreaPosition || { xPercent: 50, yPercent: 50 };
     
@@ -376,9 +362,6 @@ export default function EnhancedDesignCanvas({
   useEffect(() => {
     return () => {
       generatePreview.cancel();
-      if (positionUpdateTimeoutRef.current) {
-        clearTimeout(positionUpdateTimeoutRef.current);
-      }
     }
   }, [generatePreview]);
 
@@ -595,8 +578,8 @@ export default function EnhancedDesignCanvas({
           <>
             <RelativePositionDraggableImage
               imageUrl={uploadedImage}
-              position={designState.position}
-              relativePosition={designState.relativePrintAreaPosition}
+              position={dragPosition} // ⚡ Using local state
+              relativePosition={dragRelativePosition} // ⚡ Using local state
               scale={designState.scale}
               opacity={designState.opacity}
               rotation={designState.rotation}
@@ -635,17 +618,17 @@ export default function EnhancedDesignCanvas({
       </div>
 
       <div className="flex justify-between text-sm text-gray-500">
-        <span>X: {Math.round(designState.position.x)}</span>
-        <span>Y: {Math.round(designState.position.y)}</span>
+        <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
+        <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
         <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
       {/* Derinimo informacija apie santykinę poziciją - rodoma tik kūrimo aplinkoje */}
-      {process.env.NODE_ENV === 'development' && designState.relativePrintAreaPosition && (
+      {process.env.NODE_ENV === 'development' && dragRelativePosition && ( /* ⚡ Using local state */
         <div className="mt-2 p-2 bg-gray-100 text-xs text-gray-700 rounded">
           <div className="flex justify-between">
-            <span>RelX: {Math.round(designState.relativePrintAreaPosition.xPercent)}%</span>
-            <span>RelY: {Math.round(designState.relativePrintAreaPosition.yPercent)}%</span>
+            <span>RelX: {Math.round(dragRelativePosition.xPercent)}%</span>
+            <span>RelY: {Math.round(dragRelativePosition.yPercent)}%</span>
             <span>{designState.locked ? '🔒 Užrakinta' : '🔓 Atrakinta'}</span>
           </div>
         </div>
@@ -759,7 +742,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti dydį</h4>
-                  <p className="text-sm text-gray-600">Naudokite „Dydis" slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
+                  <p className="text-sm text-gray-600">Naudokite &quot;Dydis&quot; slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
                 </div>
               </div>
               
@@ -783,7 +766,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti permatomumą</h4>
-                  <p className="text-sm text-gray-600">Koreguokite „Permatomumas" slankiklį, kad pakeistumėte logotipo ryškumą.</p>
+                  <p className="text-sm text-gray-600">Koreguokite &quot;Permatomumas&quot; slankiklį, kad pakeistumėte logotipo ryškumą.</p>
                 </div>
               </div>
               
