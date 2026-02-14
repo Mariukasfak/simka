@@ -23,5 +23,23 @@ export async function resolve(specifier, context, nextResolve) {
     }
   }
 
+  // Handle relative imports that might be missing extensions for test environment
+  if (specifier.startsWith('./') || specifier.startsWith('../')) {
+    try {
+        return await nextResolve(specifier, context);
+    } catch (error) {
+        if (error.code === 'ERR_MODULE_NOT_FOUND' || error.code === 'ERR_UNSUPPORTED_DIR_IMPORT') {
+            try {
+                return await nextResolve(specifier + '.ts', context);
+            } catch (e) {
+                  try {
+                    return await nextResolve(specifier + '.tsx', context);
+                  } catch (e2) {}
+            }
+        }
+        throw error;
+    }
+}
+
   return nextResolve(specifier, context);
 }

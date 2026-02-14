@@ -51,15 +51,17 @@ function HomeContent() {
       imageUrl: '/images/hoodie_dark.png',
       type: 'hoodie',
       color: 'dark',
-      price: 39.99
+      price: 39.99,
+      description: 'Kokybiškas, šiltas džemperis su gobtuvu. Puikiai tinka vėsesniam orui. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
     },
     {
       id: 'hoodie-light',
       name: 'Džemperis (šviesus)',
-      imageUrl: '/images/hoodie_light.png',
+      imageUrl: '/images/hoodie_light_front.png',
       type: 'hoodie',
       color: 'light',
-      price: 39.99
+      price: 39.99,
+      description: 'Stilingas šviesus džemperis su gobtuvu. Minkštas vidus užtikrina komfortą. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
     },
     {
       id: 'tshirt-dark',
@@ -67,7 +69,8 @@ function HomeContent() {
       imageUrl: '/images/tshirt_dark.png',
       type: 'tshirt',
       color: 'dark',
-      price: 24.99
+      price: 24.99,
+      description: 'Klasikiniai juodi marškinėliai trumpomis rankovėmis. Pagaminti iš aukštos kokybės medvilnės. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
     },
     {
       id: 'tshirt-light',
@@ -75,7 +78,8 @@ function HomeContent() {
       imageUrl: '/images/tshirt_light.png',
       type: 'tshirt',
       color: 'light',
-      price: 24.99
+      price: 24.99,
+      description: 'Lengvi ir patogūs balti marškinėliai. Puikiai tinka spaudai. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
     }
   ], []);
   

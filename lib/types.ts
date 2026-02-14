@@ -72,7 +72,7 @@ export interface OrderFormData {
   name: string;
   email: string;
   phone?: string;
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL';
   quantity: number;
   comments?: string;
   printAreas: PrintAreaPosition[];

@@ -3,40 +3,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import type { PrintAreaPosition } from '@/lib/types'
-
-// Validation schema
-const orderFormSchema = z.object({
-  name: z.string()
-    .min(2, 'Vardas turi būti bent 2 simbolių ilgio')
-    .max(50, 'Vardas negali būti ilgesnis nei 50 simbolių')
-    .regex(/^[a-zA-ZĄąČčĘęĖėĮįŠšŲųŪūŽž\s]+$/, 'Vardas gali turėti tik raides ir tarpus'),
-  email: z.string()
-    .email('Neteisingas el. pašto formatas')
-    .min(5, 'El. paštas turi būti bent 5 simbolių ilgio')
-    .max(100, 'El. paštas negali būti ilgesnis nei 100 simbolių'),
-  phone: z.string()
-    .min(8, 'Telefono numeris turi būti bent 8 simbolių')
-    .max(15, 'Telefono numeris negali būti ilgesnis nei 15 simbolių')
-    .regex(/^[+]?[\d\s-()]+$/, 'Neteisingas telefono numerio formatas')
-    .optional(),
-  size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL'], {
-    required_error: 'Pasirinkite dydį'
-  }),
-  quantity: z.number()
-    .min(1, 'Minimalus kiekis yra 1')
-    .max(1000, 'Maksimalus kiekis yra 1000')
-    .int('Kiekis turi būti sveikasis skaičius'),
-  printAreas: z.array(z.string()).min(1, 'Pasirinkite bent vieną spausdinimo vietą'),
-  comments: z.string()
-    .max(500, 'Komentaras negali būti ilgesnis nei 500 simbolių')
-    .optional()
-    .transform(val => val === '' ? undefined : val),
-})
-
-type OrderFormData = z.infer<typeof orderFormSchema>
+import { orderFormSchema, type OrderFormData } from '@/lib/validations/order'
 
 // Print area labels in Lithuanian - optimizuota su useMemo
 const printAreaLabels: Record<PrintAreaPosition, string> = {
@@ -259,6 +228,8 @@ export default function EnhancedOrderForm({
               <option value="L">L</option>
               <option value="XL">XL</option>
               <option value="XXL">XXL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
             </select>
             {errors.size && (
               <p className="mt-1 text-sm text-red-600">{errors.size.message}</p>
