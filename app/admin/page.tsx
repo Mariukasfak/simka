@@ -20,7 +20,11 @@ export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  // Provide fallback values for build time when env vars might be missing
+  const supabase = createClientComponentClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+  })
 
   useEffect(() => {
     const checkAuth = async () => {
