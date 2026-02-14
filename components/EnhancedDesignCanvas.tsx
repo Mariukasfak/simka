@@ -43,7 +43,13 @@ export default function EnhancedDesignCanvas({
   const skipStateUpdateRef = useRef(false)
   const positionUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
-  // Optimizuotas peržiūros generavimas
+  // Keep designState in ref for access inside debounced callback
+  const designStateRef = useRef(designState);
+  useEffect(() => {
+    designStateRef.current = designState;
+  }, [designState]);
+
+  // Optimizuotas peržiūros generavimas naudojant Canvas API
   const generatePreview = useCallback(
     debounce(async (forceGenerate = false) => {
       if (!canvasRef.current || !uploadedImage || (previewInProgressRef.current && !forceGenerate)) {
@@ -55,49 +61,106 @@ export default function EnhancedDesignCanvas({
         setIsGenerating(true);
         setError(null);
         
-        // Sukuriame tikslią kopiją, kurią naudosime peržiūrai
-        const originalCanvas = canvasRef.current;
-        const previewContainer = document.createElement('div');
-        previewContainer.style.position = 'absolute';
-        previewContainer.style.left = '-9999px';
-        previewContainer.style.width = originalCanvas.offsetWidth + 'px';
-        previewContainer.style.height = originalCanvas.offsetHeight + 'px';
-        document.body.appendChild(previewContainer);
+        const startTime = performance.now();
+        const container = canvasRef.current;
+        const rect = container.getBoundingClientRect();
         
-        // Kopijuojame originalų turinį
-        previewContainer.innerHTML = originalCanvas.innerHTML;
+        // Naudojame 1.5x mastelį geresnei kokybei (atitinka originalų nustatymą)
+        const scaleFactor = 1.5;
+        const width = rect.width * scaleFactor;
+        const height = rect.height * scaleFactor;
+
+        // Sukuriame drobę (Canvas)
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
         
-        // Suraskime logotipo elementą ir pritaikykime tiksliai tokią pačią transformaciją
-        const originalLogo = originalCanvas.querySelector('.draggable-image');
-        const previewLogo = previewContainer.querySelector('.draggable-image');
-        
-        if (originalLogo && previewLogo) {
-          previewLogo.style.transform = originalLogo.style.transform;
-          previewLogo.style.opacity = originalLogo.style.opacity;
+        if (!ctx) {
+            throw new Error('Nepavyko sukurti drobės konteksto');
         }
+
+        // 1. Piešiame baltą foną
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. Piešiame produkto vaizdą
+        // Naudojame DOM elementą, kad gautume tikslią poziciją ir dydį (įskaitant object-contain)
+        const productImgEl = container.querySelector('img[alt="Produkto vaizdas"]') as HTMLImageElement;
         
-        // Generuojame peržiūrą naudodami naujai sukurtą konteinerį
-        const canvas = await html2canvas(previewContainer, {
-          backgroundColor: null,
-          scale: 1.5,
-          logging: false,
-          useCORS: true,
-          allowTaint: true,
-          // Neliesti transformacijos
-          onclone: (clonedDoc, clonedElem) => {
-            const clonedLogo = clonedElem.querySelector('.draggable-image');
-            if (clonedLogo && originalLogo) {
-              clonedLogo.style.transform = originalLogo.style.transform;
-            }
+        if (productImgEl) {
+          const pRect = productImgEl.getBoundingClientRect();
+          const pX = (pRect.left - rect.left) * scaleFactor;
+          const pY = (pRect.top - rect.top) * scaleFactor;
+          const pW = pRect.width * scaleFactor;
+          const pH = pRect.height * scaleFactor;
+
+          // Sukuriame naują Image objektą su CORS nustatymais
+          const productImg = new Image();
+          productImg.crossOrigin = "anonymous";
+          await new Promise<void>((resolve) => {
+             productImg.onload = () => resolve();
+             productImg.onerror = () => resolve(); // Tęsiame net jei nepavyksta įkelti
+             productImg.src = productImgEl.src;
+          });
+
+          if (productImg.complete && productImg.naturalWidth > 0) {
+            ctx.drawImage(productImg, pX, pY, pW, pH);
           }
-        });
+        }
+
+        // 3. Piešiame logotipą
+        // Naudojame DOM elementą, kad gautume bazinį dydį (prieš transformacijas)
+        const logoImgEl = container.querySelector('.draggable-image img') as HTMLImageElement;
         
-        // Išvalome laikiną konteinerį
-        document.body.removeChild(previewContainer);
+        if (logoImgEl) {
+           const logoImg = new Image();
+           logoImg.crossOrigin = "anonymous";
+           await new Promise<void>((resolve) => {
+              logoImg.onload = () => resolve();
+              logoImg.onerror = () => resolve();
+              logoImg.src = uploadedImage;
+           });
+
+           if (logoImg.complete && logoImg.naturalWidth > 0) {
+               // Gauname bazinį dydį (css constrained width/height, bet be transformacijų)
+               const baseW = logoImgEl.offsetWidth * scaleFactor;
+               const baseH = logoImgEl.offsetHeight * scaleFactor;
+
+               // Naudojame naujausią būseną iš ref
+               const currentState = designStateRef.current;
+
+               ctx.save();
+
+               // Nustatome transformacijos centrą į drobės centrą
+               ctx.translate(width / 2, height / 2);
+
+               // Pritaikome poziciją (scaled)
+               ctx.translate(currentState.position.x * scaleFactor, currentState.position.y * scaleFactor);
+
+               // Pasukimas
+               ctx.rotate((currentState.rotation * Math.PI) / 180);
+
+               // Mastelis
+               ctx.scale(currentState.scale, currentState.scale);
+
+               // Permatomumas
+               ctx.globalAlpha = currentState.opacity;
+
+               // Piešiame centruotą vaizdą
+               ctx.drawImage(logoImg, -baseW / 2, -baseH / 2, baseW, baseH);
+
+               ctx.restore();
+           }
+        }
         
         // Išsaugome peržiūrą
         const preview = canvas.toDataURL('image/png', 0.9);
         onPreviewGenerated(preview);
+
+        const endTime = performance.now();
+        // console.log(`Peržiūra sugeneruota per ${(endTime - startTime).toFixed(2)}ms`); // Uncomment for debugging
+
       } catch (error) {
         console.error('Peržiūros generavimo klaida:', error);
         setError('Nepavyko sugeneruoti peržiūros');
@@ -107,124 +170,15 @@ export default function EnhancedDesignCanvas({
         previewInProgressRef.current = false;
       }
     }, 800),
-    [uploadedImage, onPreviewGenerated]
+    [uploadedImage, onPreviewGenerated] // Dependencies strictly required for recreation
   )
 
   // Avarinė funkcija visoms peržiūroms regeneruoti
   const forceRegenerateAllPreviews = useCallback(async () => {
-    if (!canvasRef.current || !uploadedImage) {
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    // Sukaupkime visas pozicijas ir suraskime problemą
-    const positionLog = {
-      currentView,
-      designState,
-      canvasSize: canvasRef.current?.getBoundingClientRect(),
-      printAreaSize: printAreaRef.current?.getBoundingClientRect(),
-      windowSize: { width: window.innerWidth, height: window.innerHeight },
-      cssStyles: {
-        position: designState.position,
-        scale: designState.scale,
-        rotation: designState.rotation,
-        opacity: designState.opacity,
-        relativePrintAreaPosition: designState.relativePrintAreaPosition
-      }
-    };
-    
-    console.log('DEBUG: Pozicijos diagnozė', positionLog);
-    
-    try {
-      // Sukuriame tikslią kopiją, kurią naudosime peržiūrai
-      const originalCanvas = canvasRef.current;
-      const previewContainer = document.createElement('div');
-      previewContainer.style.position = 'absolute';
-      previewContainer.style.left = '-9999px';
-      previewContainer.style.width = originalCanvas.offsetWidth + 'px';
-      previewContainer.style.height = originalCanvas.offsetHeight + 'px';
-      document.body.appendChild(previewContainer);
-      
-      // Kopijuojame originalų turinį
-      previewContainer.innerHTML = originalCanvas.innerHTML;
-      
-      // Suraskime logotipo elementą 
-      const originalLogo = originalCanvas.querySelector('.draggable-image');
-      const previewLogo = previewContainer.querySelector('.draggable-image');
-      
-      if (originalLogo && previewLogo) {
-        // Išsaugome originalią transformaciją
-        const originalTransform = originalLogo.style.transform;
-        console.log('Originali transformacija:', originalTransform);
-        
-        // Tiesiogiai nustatome transformaciją pagal santykinę poziciją
-        if (designState.relativePrintAreaPosition && printAreaRef.current) {
-          const printArea = printAreaRef.current.getBoundingClientRect();
-          const container = canvasRef.current.getBoundingClientRect();
-          
-          // Apskaičiuojame tikslų atstumą nuo printArea viršutinio kairiojo kampo
-          const relPos = designState.relativePrintAreaPosition;
-          const xInPrintArea = (relPos.xPercent / 100) * printArea.width;
-          const yInPrintArea = (relPos.yPercent / 100) * printArea.height;
-          
-          // Apskaičiuojame absoliučią poziciją canvasRef koordinačių sistemoje
-          const printAreaLeft = printArea.left - container.left;
-          const printAreaTop = printArea.top - container.top;
-          
-          const xFromLeft = printAreaLeft + xInPrintArea;
-          const yFromTop = printAreaTop + yInPrintArea;
-          
-          // Atstatome atstumą nuo centro
-          const xFromCenter = xFromLeft - (container.width / 2);
-          const yFromCenter = yFromTop - (container.height / 2);
-          
-          // Taikome naują transformaciją
-          previewLogo.style.transform = `
-            translate3d(calc(-50% + ${xFromCenter}px), calc(-50% + ${yFromCenter}px), 0) 
-            scale(${designState.scale}) 
-            rotate(${designState.rotation}deg)
-          `;
-          
-          console.log('Nauja transformacija pagal santykines koordinates:', previewLogo.style.transform);
-        } else {
-          // Jei nėra santykinių koordinačių, naudojame originalią transformaciją
-          previewLogo.style.transform = originalTransform;
-        }
-        
-        previewLogo.style.opacity = String(designState.opacity);
-      }
-      
-      // Generuojame peržiūrą
-      const canvas = await html2canvas(previewContainer, {
-        backgroundColor: null,
-        scale: 1.5,
-        logging: true,
-        useCORS: true,
-        allowTaint: true,
-        onclone: (clonedDoc, clonedElem) => {
-          const clonedLogo = clonedElem.querySelector('.draggable-image');
-          if (clonedLogo && previewLogo) {
-            clonedLogo.style.transform = previewLogo.style.transform;
-          }
-        }
-      });
-      
-      // Išvalome laikiną konteinerį
-      document.body.removeChild(previewContainer);
-      
-      // Išsaugome peržiūrą
-      const preview = canvas.toDataURL('image/png', 0.9);
-      onPreviewGenerated(preview);
-      
-      console.log('Peržiūra sėkmingai regeneruota');
-    } catch (error) {
-      console.error('Regeneravimo klaida:', error);
-      setError('Nepavyko regeneruoti peržiūros');
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [canvasRef, printAreaRef, uploadedImage, currentView, designState, onPreviewGenerated]);
+    // Tiesiog kviečiame optimizuotą generavimą su force flag
+    generatePreview(true);
+    console.log('Peržiūra priverstinai regeneruojama...');
+  }, [generatePreview]);
 
   // Atnaujinta pozicijos keitimo funkcija - vengiant begalinių atnaujinimų
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
@@ -587,6 +541,7 @@ export default function EnhancedDesignCanvas({
         
         <img
           src={productImage}
+          crossOrigin="anonymous"
           alt="Produkto vaizdas"
           className="w-full h-full object-contain"
         />
