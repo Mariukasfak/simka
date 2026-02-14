@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { isValidDataUri } from '@/lib/validations/image';
 
 // Formų validacijos schema
 const orderFormSchema = z.object({
@@ -130,8 +131,9 @@ export async function POST(request: Request) {
       const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
 
       // Sudarome priedų sąrašą - dabar naudojame PNG formatą, kad išsaugotume permatomumą
+      // Filter out invalid Data URIs to prevent SSRF/LFI
       const attachments = Object.entries(data.designPreviews || {})
-        .filter(([_, url]) => url)
+        .filter(([_, url]) => url && typeof url === 'string' && isValidDataUri(url))
         .map(([area, url]) => {
           const areaNames: Record<string, string> = {
             'front': 'Priekis',
@@ -139,22 +141,37 @@ export async function POST(request: Request) {
             'left-sleeve': 'Kairė rankovė',
             'right-sleeve': 'Dešinė rankovė'
           };
+
+          const urlStr = url as string;
+          // Extract MIME type from Data URI
+          const mimeTypeMatch = urlStr.match(/^data:(image\/[a-z]+);base64,/);
+          const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/png';
+          const ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1];
+
           return {
-            filename: `design-${areaNames[area as string] || area}.png`,
-            path: url as string,
+            filename: `design-${areaNames[area as string] || area}.${ext}`,
+            path: urlStr,
             encoding: 'base64',
-            contentType: 'image/png'
+            contentType: mimeType
           };
         });
       
       // Pridedame originalų logotipą kaip priedą
-      if (data.uploadedImage) {
+      // Only attach if it's a valid Data URI (prevents SSRF/LFI with blob: or other protocols)
+      if (data.uploadedImage && typeof data.uploadedImage === 'string' && isValidDataUri(data.uploadedImage)) {
+        const urlStr = data.uploadedImage;
+        const mimeTypeMatch = urlStr.match(/^data:(image\/[a-z]+);base64,/);
+        const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/png';
+        const ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1];
+
         attachments.push({
-          filename: 'original-logo.png',
-          path: data.uploadedImage,
+          filename: `original-logo.${ext}`,
+          path: urlStr,
           encoding: 'base64',
-          contentType: 'image/png'
+          contentType: mimeType
         });
+      } else if (data.uploadedImage) {
+        console.warn('Skipping uploadedImage attachment: Invalid Data URI format');
       }
       
       // Siunčiame el. laišką
