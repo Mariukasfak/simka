@@ -1,8 +1,8 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { sendEmail } from '@/lib/email';
 
 // Formų validacijos schema
 const orderFormSchema = z.object({
@@ -111,21 +111,6 @@ export async function POST(request: Request) {
     
     // Bandome siųsti el. laišką
     try {
-      // Sukonfigūruojame nodemailer pagal Hostinger SMTP nustatymus
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SERVER || 'smtp.hostinger.com',
-        port: Number(process.env.EMAIL_PORT) || 465,
-        secure: Number(process.env.EMAIL_PORT) === 465, // true naudojant 465 portą
-        auth: {
-          user: process.env.EMAIL_USER || 'labas@siemka.lt',
-          pass: process.env.EMAIL_PASSWORD || 'Simona672as.',
-        },
-        // Nustatome didesnius timeout parametrus
-        connectionTimeout: 10000, // 10 sekundžių
-        socketTimeout: 20000, // 20 sekundžių
-        debug: true, // Laikinas debuginimas
-      });
-      
       // Nustatome gavėjo el. paštą su numatyta reikšme
       const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
 
@@ -158,15 +143,12 @@ export async function POST(request: Request) {
       }
       
       // Siunčiame el. laišką
-      await transporter.sendMail({
-        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "labas@siemka.lt"}>`,
+      await sendEmail({
         to: recipientEmail,
         subject: `Naujas dizaino užsakymas - ${validatedData.name}`,
         html: emailHtml,
         attachments: attachments,
       });
-      
-      console.log(`Email sent successfully to ${recipientEmail}`);
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       // Tęsiame vykdymą, net jei el. paštas nepavyko
