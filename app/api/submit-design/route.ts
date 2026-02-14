@@ -3,16 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
-
-// Formų validacijos schema
-const orderFormSchema = z.object({
-  name: z.string().min(2, { message: "Vardas turi būti bent 2 simbolių ilgio" }),
-  email: z.string().email({ message: "Neteisingas el. pašto formatas" }),
-  phone: z.string().optional(),
-  size: z.string().min(1, { message: "Pasirinkite dydį" }),
-  quantity: z.number().min(1, { message: "Kiekis turi būti bent 1" }).max(1000),
-  comments: z.string().optional(),
-});
+import { validateOrderData } from './validator.ts';
 
 // Nurodome Next.js, kad šis maršrutas turi būti dinaminis
 export const dynamic = 'force-dynamic';
@@ -22,7 +13,7 @@ export async function POST(request: Request) {
     const data = await request.json();
     
     // Validuojame duomenis
-    const validatedData = orderFormSchema.parse(data);
+    const validatedData = validateOrderData(data);
     
     // Create detailed product info for email
     const productInfo = `${data.product.name} (${data.product.id})`;
