@@ -24,7 +24,7 @@ export default function DesignDebugger({
   
   // Apskaičiuoti santykinę poziciją
   const calculateRelativePositionInPrintArea = () => {
-    if (!containerRect || !printAreaRect || !designState) return { x: 0, y: 0 };
+    if (!containerRect || !printAreaRect || !designState) return { x: 0, y: 0, xPercent: 0, yPercent: 0 };
     
     const { position } = designState;
     
