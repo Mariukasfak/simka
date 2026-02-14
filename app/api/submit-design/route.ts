@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { generateEmailHtml } from './email-utils';
 
 // Formų validacijos schema
 const orderFormSchema = z.object({
@@ -24,42 +25,8 @@ export async function POST(request: Request) {
     // Validuojame duomenis
     const validatedData = orderFormSchema.parse(data);
     
-    // Create detailed product info for email
-    const productInfo = `${data.product.name} (${data.product.id})`;
-    const selectedAreas = data.printAreas?.map((area: string) => {
-      const areaNames: Record<string, string> = {
-        'front': 'Priekis',
-        'back': 'Nugara',
-        'left-sleeve': 'Kairė rankovė',
-        'right-sleeve': 'Dešinė rankovė'
-      };
-      return areaNames[area] || area;
-    }).join(', ') || 'Nenurodyta';
-
-    // Create email content with more detailed information
-    const emailHtml = `
-      <h1>Naujas dizaino užsakymas</h1>
-      <p><strong>Kliento informacija:</strong></p>
-      <p>Vardas: ${validatedData.name}</p>
-      <p>El. paštas: ${validatedData.email}</p>
-      <p>Telefonas: ${validatedData.phone || 'Nenurodytas'}</p>
-      
-      <p><strong>Užsakymo informacija:</strong></p>
-      <p>Produktas: ${productInfo}</p>
-      <p>Dydis: ${validatedData.size}</p>
-      <p>Kiekis: ${validatedData.quantity}</p>
-      <p>Kaina: €${data.totalPrice.toFixed(2)}</p>
-      
-      <p><strong>Spausdinimo vietos:</strong> ${selectedAreas}</p>
-      
-      <p><strong>Komentarai:</strong></p>
-      <p>${validatedData.comments || 'Nėra'}</p>
-      
-      <p><strong>Dizaino peržiūros:</strong></p>
-      <p>Dizaino peržiūros yra pridėtos kaip priedai (attachments). Originali logotipo versija taip pat pridėta.</p>
-      
-      <p>Šis laiškas sugeneruotas automatiškai iš susikurk.siemka.lt platformos.</p>
-    `;
+    // Generuojame el. laiško HTML su saugiai apdorotais duomenimis
+    const emailHtml = generateEmailHtml(validatedData, data);
     
     // Bandome išsaugoti užsakymą į duomenų bazę
     let userId = null;
