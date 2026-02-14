@@ -50,6 +50,14 @@ export function useDesignState() {
   
   const [currentView, setCurrentView] = useState<PrintAreaPosition>('front')
 
+  // Saugome naujausią designStates būseną nuorodoje (ref), kad
+  // getAllDesignStates funkcija būtų stabili ir nesikeistų keičiantis state
+  const designStatesRef = useRef(designStates)
+
+  useEffect(() => {
+    designStatesRef.current = designStates
+  }, [designStates])
+
   // Naudojame ref, kad išvengti begalinio ciklo
   const skipUpdateRef = useRef(false)
   const isFirstRender = useRef(true)
@@ -172,9 +180,10 @@ export function useDesignState() {
   }, [])
 
   // Gauti visų dizaino būsenų objektą (naudojama siuntimui)
+  // Naudojame ref, kad funkcija būtų stabili (nesikeistų nuoroda)
   const getAllDesignStates = useCallback(() => {
-    return designStates
-  }, [designStates])
+    return designStatesRef.current
+  }, [])
   
   // Effect'as, kad išvalytų pirmojo rendarinimo žymę
   useEffect(() => {
