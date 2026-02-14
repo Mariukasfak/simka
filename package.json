@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "node --experimental-strip-types --import ./scripts/test-setup.mjs app/api/auth/github/route.test.ts",
     "clean": "rm -rf .next"
   },
   "dependencies": {
