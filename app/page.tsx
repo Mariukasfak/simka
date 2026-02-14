@@ -57,7 +57,7 @@ function HomeContent() {
     {
       id: 'hoodie-light',
       name: 'Džemperis (šviesus)',
-      imageUrl: '/images/hoodie_light.png',
+      imageUrl: '/images/hoodie_light_front.png',
       type: 'hoodie',
       color: 'light',
       price: 39.99,
