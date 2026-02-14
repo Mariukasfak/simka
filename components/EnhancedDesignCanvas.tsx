@@ -68,8 +68,8 @@ export default function EnhancedDesignCanvas({
         previewContainer.innerHTML = originalCanvas.innerHTML;
         
         // Suraskime logotipo elementą ir pritaikykime tiksliai tokią pačią transformaciją
-        const originalLogo = originalCanvas.querySelector('.draggable-image');
-        const previewLogo = previewContainer.querySelector('.draggable-image');
+        const originalLogo = originalCanvas.querySelector('.draggable-image') as HTMLElement;
+        const previewLogo = previewContainer.querySelector('.draggable-image') as HTMLElement;
         
         if (originalLogo && previewLogo) {
           previewLogo.style.transform = originalLogo.style.transform;
@@ -85,7 +85,7 @@ export default function EnhancedDesignCanvas({
           allowTaint: true,
           // Neliesti transformacijos
           onclone: (clonedDoc, clonedElem) => {
-            const clonedLogo = clonedElem.querySelector('.draggable-image');
+            const clonedLogo = clonedElem.querySelector('.draggable-image') as HTMLElement;
             if (clonedLogo && originalLogo) {
               clonedLogo.style.transform = originalLogo.style.transform;
             }
@@ -150,8 +150,8 @@ export default function EnhancedDesignCanvas({
       previewContainer.innerHTML = originalCanvas.innerHTML;
       
       // Suraskime logotipo elementą 
-      const originalLogo = originalCanvas.querySelector('.draggable-image');
-      const previewLogo = previewContainer.querySelector('.draggable-image');
+      const originalLogo = originalCanvas.querySelector('.draggable-image') as HTMLElement;
+      const previewLogo = previewContainer.querySelector('.draggable-image') as HTMLElement;
       
       if (originalLogo && previewLogo) {
         // Išsaugome originalią transformaciją
@@ -203,7 +203,7 @@ export default function EnhancedDesignCanvas({
         useCORS: true,
         allowTaint: true,
         onclone: (clonedDoc, clonedElem) => {
-          const clonedLogo = clonedElem.querySelector('.draggable-image');
+          const clonedLogo = clonedElem.querySelector('.draggable-image') as HTMLElement;
           if (clonedLogo && previewLogo) {
             clonedLogo.style.transform = previewLogo.style.transform;
           }
@@ -759,7 +759,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti dydį</h4>
-                  <p className="text-sm text-gray-600">Naudokite „Dydis" slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
+                  <p className="text-sm text-gray-600">Naudokite „Dydis&quot; slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
                 </div>
               </div>
               
@@ -783,7 +783,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti permatomumą</h4>
-                  <p className="text-sm text-gray-600">Koreguokite „Permatomumas" slankiklį, kad pakeistumėte logotipo ryškumą.</p>
+                  <p className="text-sm text-gray-600">Koreguokite „Permatomumas&quot; slankiklį, kad pakeistumėte logotipo ryškumą.</p>
                 </div>
               </div>
               
