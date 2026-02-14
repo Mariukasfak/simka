@@ -596,6 +596,7 @@ export default function RelativePositionDraggableImage({
       <img
         ref={imageRef}
         src={imageUrl}
+        crossOrigin="anonymous"
         alt="Dizaino elementas"
         className="max-w-[200px] max-h-[200px] pointer-events-none select-none"
         draggable={false}
