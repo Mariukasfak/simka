@@ -5,7 +5,7 @@ const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
 
 if (!GITHUB_APP_ID || !GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-  throw new Error('Missing GitHub environment variables')
+  console.warn('Missing GitHub environment variables')
 }
 
 export const octokit = new Octokit({
@@ -13,6 +13,10 @@ export const octokit = new Octokit({
 })
 
 export async function getGitHubAccessToken(code: string) {
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    throw new Error('Missing GitHub environment variables')
+  }
+
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
