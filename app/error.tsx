@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/Button';
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
 
 export default function ErrorPage({
   error,
@@ -11,7 +11,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Aplikacijos klaida:', error);
+    console.error("Aplikacijos klaida:", error);
   }, [error]);
 
   return (
@@ -23,10 +23,7 @@ export default function ErrorPage({
         <p className="text-gray-600 mb-6">
           Apgailestaujame, bet įvyko nenumatyta klaida. Pabandykite iš naujo.
         </p>
-        <Button
-          onClick={reset}
-          variant="default"
-        >
+        <Button onClick={reset} variant="default">
           Bandyti iš naujo
         </Button>
       </div>

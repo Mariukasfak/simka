@@ -1,34 +1,32 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/Button'
-import { Slider } from '@/components/ui/Slider'
-import { RefreshCw } from 'lucide-react'
+import { Button } from "@/components/ui/Button";
+import { Slider } from "@/components/ui/Slider";
+import { RefreshCw } from "lucide-react";
 
 interface ControlsProps {
-  scale: number
-  opacity: number
-  onScaleChange: (scale: number) => void
-  onOpacityChange: (opacity: number) => void
+  scale: number;
+  opacity: number;
+  onScaleChange: (scale: number) => void;
+  onOpacityChange: (opacity: number) => void;
 }
 
 export default function Controls({
   scale,
   opacity,
   onScaleChange,
-  onOpacityChange
+  onOpacityChange,
 }: ControlsProps) {
   const handleReset = () => {
-    onScaleChange(1)
-    onOpacityChange(1)
-  }
+    onScaleChange(1);
+    onOpacityChange(1);
+  };
 
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg shadow-sm">
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-sm font-medium text-brand-900">
-            Dydis
-          </label>
+          <label className="text-sm font-medium text-brand-900">Dydis</label>
           <span className="text-sm text-brand-600">
             {Math.round(scale * 100)}%
           </span>
@@ -79,5 +77,5 @@ export default function Controls({
         </ul>
       </div>
     </div>
-  )
+  );
 }

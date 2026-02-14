@@ -1,5 +1,9 @@
 // Print area types
-export type PrintAreaPosition = 'front' | 'back' | 'left-sleeve' | 'right-sleeve';
+export type PrintAreaPosition =
+  | "front"
+  | "back"
+  | "left-sleeve"
+  | "right-sleeve";
 
 export interface PrintArea {
   id: string;
@@ -55,8 +59,8 @@ export interface Product {
   id: string;
   name: string;
   imageUrl: string;
-  type: 'hoodie' | 'tshirt';
-  color: 'light' | 'dark';
+  type: "hoodie" | "tshirt";
+  color: "light" | "dark";
   price: number;
   description?: string; // Pridedame aprašymo lauką kaip neprivalomą
 }
@@ -72,7 +76,7 @@ export interface OrderFormData {
   name: string;
   email: string;
   phone?: string;
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  size: "XS" | "S" | "M" | "L" | "XL" | "XXL";
   quantity: number;
   comments?: string;
   printAreas: PrintAreaPosition[];
@@ -82,7 +86,7 @@ export interface OrderFormData {
 export interface Order {
   id: string;
   customerName: string;
-  status: 'pending' | 'processing' | 'shipped' | 'completed' | 'cancelled';
+  status: "pending" | "processing" | "shipped" | "completed" | "cancelled";
   totalPrice: number;
   createdAt: string;
 }

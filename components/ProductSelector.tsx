@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { motion } from 'framer-motion'
-import Image from 'next/image'
-import type { Product } from '@/lib/types'
+import { motion } from "framer-motion";
+import Image from "next/image";
+import type { Product } from "@/lib/types";
 
 interface ProductSelectorProps {
-  products: Product[]
-  selectedProduct: Product
-  onSelect: (product: Product) => void
+  products: Product[];
+  selectedProduct: Product;
+  onSelect: (product: Product) => void;
 }
 
 export default function ProductSelector({
   products,
   selectedProduct,
-  onSelect
+  onSelect,
 }: ProductSelectorProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-brand-900">
         Pasirinkite produktą
       </h2>
-      
+
       <div className="grid grid-cols-2 gap-4">
         {products.map((product) => (
           <motion.button
@@ -28,8 +28,8 @@ export default function ProductSelector({
             onClick={() => onSelect(product)}
             className={`relative p-4 rounded-lg border-2 transition-colors ${
               selectedProduct.id === product.id
-                ? 'border-accent-500 bg-accent-50'
-                : 'border-gray-200 hover:border-gray-300'
+                ? "border-accent-500 bg-accent-50"
+                : "border-gray-200 hover:border-gray-300"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -41,14 +41,12 @@ export default function ProductSelector({
                 className="w-full h-full object-contain p-2"
               />
             </div>
-            
+
             <div className="mt-3 text-center">
               <h3 className="text-sm font-medium text-brand-900">
                 {product.name}
               </h3>
-              <p className="mt-1 text-sm text-brand-600">
-                €{product.price}
-              </p>
+              <p className="mt-1 text-sm text-brand-600">€{product.price}</p>
             </div>
 
             {selectedProduct.id === product.id && (
@@ -87,5 +85,5 @@ export default function ProductSelector({
         </div>
       </div>
     </div>
-  )
+  );
 }

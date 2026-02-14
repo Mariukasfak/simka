@@ -1,49 +1,49 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { orderFormSchema, type OrderFormData } from '@/lib/validations/order'
-import toast from 'react-hot-toast'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { orderFormSchema, type OrderFormData } from "@/lib/validations/order";
+import toast from "react-hot-toast";
 
 interface OrderFormProps {
-  onSubmit: (data: OrderFormData) => Promise<void>
-  isSubmitting: boolean
-  disabled?: boolean
-  designPreview: string | null
+  onSubmit: (data: OrderFormData) => Promise<void>;
+  isSubmitting: boolean;
+  disabled?: boolean;
+  designPreview: string | null;
 }
 
 export default function OrderForm({
   onSubmit,
   isSubmitting,
   disabled = false,
-  designPreview
+  designPreview,
 }: OrderFormProps) {
-  const [showPreview, setShowPreview] = useState(false)
-  
+  const [showPreview, setShowPreview] = useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
   } = useForm<OrderFormData>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
       quantity: 1,
-      size: 'M'
-    }
-  })
+      size: "M",
+    },
+  });
 
   const handleFormSubmit = async (data: OrderFormData) => {
     try {
-      await onSubmit(data)
-      reset()
-      toast.success('Užsakymas sėkmingai pateiktas!')
+      await onSubmit(data);
+      reset();
+      toast.success("Užsakymas sėkmingai pateiktas!");
     } catch (error) {
-      toast.error('Įvyko klaida pateikiant užsakymą')
-      console.error('Order submission error:', error)
+      toast.error("Įvyko klaida pateikiant užsakymą");
+      console.error("Order submission error:", error);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -52,9 +52,9 @@ export default function OrderForm({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
             <h3 className="text-lg font-medium mb-4">Užsakymo peržiūra</h3>
-            <img 
-              src={designPreview} 
-              alt="Design Preview" 
+            <img
+              src={designPreview}
+              alt="Design Preview"
               className="mb-4 max-h-96 mx-auto"
             />
             <div className="flex justify-end gap-4">
@@ -70,7 +70,7 @@ export default function OrderForm({
                 className="btn btn-primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Siunčiama...' : 'Patvirtinti užsakymą'}
+                {isSubmitting ? "Siunčiama..." : "Patvirtinti užsakymą"}
               </button>
             </div>
           </div>
@@ -79,11 +79,14 @@ export default function OrderForm({
 
       {/* Form Fields */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700"
+        >
           Vardas <span className="text-red-500">*</span>
         </label>
         <input
-          {...register('name')}
+          {...register("name")}
           type="text"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           disabled={isSubmitting || disabled}
@@ -94,11 +97,14 @@ export default function OrderForm({
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
           El. paštas <span className="text-red-500">*</span>
         </label>
         <input
-          {...register('email')}
+          {...register("email")}
           type="email"
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           disabled={isSubmitting || disabled}
@@ -110,11 +116,14 @@ export default function OrderForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="size" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="size"
+            className="block text-sm font-medium text-gray-700"
+          >
             Dydis <span className="text-red-500">*</span>
           </label>
           <select
-            {...register('size')}
+            {...register("size")}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             disabled={isSubmitting || disabled}
           >
@@ -131,11 +140,14 @@ export default function OrderForm({
         </div>
 
         <div>
-          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="quantity"
+            className="block text-sm font-medium text-gray-700"
+          >
             Kiekis <span className="text-red-500">*</span>
           </label>
           <input
-            {...register('quantity', { valueAsNumber: true })}
+            {...register("quantity", { valueAsNumber: true })}
             type="number"
             min="1"
             max="100"
@@ -143,17 +155,22 @@ export default function OrderForm({
             disabled={isSubmitting || disabled}
           />
           {errors.quantity && (
-            <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.quantity.message}
+            </p>
           )}
         </div>
       </div>
 
       <div>
-        <label htmlFor="comments" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="comments"
+          className="block text-sm font-medium text-gray-700"
+        >
           Papildomi komentarai
         </label>
         <textarea
-          {...register('comments')}
+          {...register("comments")}
           rows={3}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           placeholder="Jei turite papildomų pageidavimų ar klausimų, užrašykite juos čia"
@@ -181,5 +198,5 @@ export default function OrderForm({
         </div>
       )}
     </form>
-  )
+  );
 }

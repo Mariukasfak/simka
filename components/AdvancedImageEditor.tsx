@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useRef, useEffect, useState, useCallback } from 'react'
-import { debounce } from 'lodash'
-import { Button } from './ui/Button'
-import { Slider } from './ui/Slider'
+import { useRef, useEffect, useState, useCallback } from "react";
+import { debounce } from "lodash";
+import { Button } from "./ui/Button";
+import { Slider } from "./ui/Slider";
 import {
   Save,
   Undo2,
@@ -16,34 +16,34 @@ import {
   SunMedium,
   Contrast,
   Palette,
-  X
-} from 'lucide-react'
+  X,
+} from "lucide-react";
 
 interface AdvancedImageEditorProps {
-  imageUrl: string
-  onSave: (editedImageUrl: string) => void
-  onCancel: () => void
+  imageUrl: string;
+  onSave: (editedImageUrl: string) => void;
+  onCancel: () => void;
 }
 
 interface ImageAdjustments {
-  brightness: number
-  contrast: number
-  saturation: number
-  blur: number
-  sepia: number
-  grayscale: number
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  blur: number;
+  sepia: number;
+  grayscale: number;
 }
 
 interface ImageTransform {
-  rotate: number
-  flipX: boolean
-  flipY: boolean
+  rotate: number;
+  flipX: boolean;
+  flipY: boolean;
   crop: {
-    x: number
-    y: number
-    width: number
-    height: number
-  } | null
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
 }
 
 const defaultAdjustments: ImageAdjustments = {
@@ -52,68 +52,69 @@ const defaultAdjustments: ImageAdjustments = {
   saturation: 1,
   blur: 0,
   sepia: 0,
-  grayscale: 0
-}
+  grayscale: 0,
+};
 
 const defaultTransform: ImageTransform = {
   rotate: 0,
   flipX: false,
   flipY: false,
-  crop: null
-}
+  crop: null,
+};
 
 export default function AdvancedImageEditor({
   imageUrl,
   onSave,
-  onCancel
+  onCancel,
 }: AdvancedImageEditorProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [history, setHistory] = useState<string[]>([])
-  const [historyIndex, setHistoryIndex] = useState(-1)
-  const [adjustments, setAdjustments] = useState<ImageAdjustments>(defaultAdjustments)
-  const [transform, setTransform] = useState<ImageTransform>(defaultTransform)
-  const [isCropping, setIsCropping] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [adjustments, setAdjustments] =
+    useState<ImageAdjustments>(defaultAdjustments);
+  const [transform, setTransform] = useState<ImageTransform>(defaultTransform);
+  const [isCropping, setIsCropping] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Initialize canvas with image
   useEffect(() => {
-    const img = new Image()
-    img.src = imageUrl
+    const img = new Image();
+    img.src = imageUrl;
     img.onload = () => {
-      if (!canvasRef.current) return
-      const ctx = canvasRef.current.getContext('2d')
-      if (!ctx) return
+      if (!canvasRef.current) return;
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
 
       // Set canvas size to match image
-      canvasRef.current.width = img.width
-      canvasRef.current.height = img.height
+      canvasRef.current.width = img.width;
+      canvasRef.current.height = img.height;
 
       // Draw initial image
-      ctx.drawImage(img, 0, 0)
-      
+      ctx.drawImage(img, 0, 0);
+
       // Add to history
-      addToHistory()
-    }
-  }, [imageUrl])
+      addToHistory();
+    };
+  }, [imageUrl]);
 
   // Add current canvas state to history
   const addToHistory = useCallback(() => {
-    if (!canvasRef.current) return
-    const dataUrl = canvasRef.current.toDataURL()
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), dataUrl])
-    setHistoryIndex(prev => prev + 1)
-  }, [historyIndex])
+    if (!canvasRef.current) return;
+    const dataUrl = canvasRef.current.toDataURL();
+    setHistory((prev) => [...prev.slice(0, historyIndex + 1), dataUrl]);
+    setHistoryIndex((prev) => prev + 1);
+  }, [historyIndex]);
 
   // Apply image adjustments
   const applyAdjustments = useCallback(
     debounce(() => {
-      if (!canvasRef.current) return
-      const ctx = canvasRef.current.getContext('2d')
-      if (!ctx) return
+      if (!canvasRef.current) return;
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
 
       // Reset canvas
-      ctx.filter = 'none'
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      ctx.filter = "none";
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
       // Apply current adjustments
       ctx.filter = `
@@ -123,89 +124,95 @@ export default function AdvancedImageEditor({
         blur(${adjustments.blur}px)
         sepia(${adjustments.sepia})
         grayscale(${adjustments.grayscale})
-      `
+      `;
 
       // Draw image with current transform
-      const img = new Image()
-      img.src = history[historyIndex]
+      const img = new Image();
+      img.src = history[historyIndex];
       img.onload = () => {
-        if (!canvasRef.current || !ctx) return
+        if (!canvasRef.current || !ctx) return;
 
-        ctx.save()
-        
+        ctx.save();
+
         // Apply transforms
-        ctx.translate(canvasRef.current.width / 2, canvasRef.current.height / 2)
-        ctx.rotate((transform.rotate * Math.PI) / 180)
-        ctx.scale(transform.flipX ? -1 : 1, transform.flipY ? -1 : 1)
-        ctx.translate(-canvasRef.current.width / 2, -canvasRef.current.height / 2)
+        ctx.translate(
+          canvasRef.current.width / 2,
+          canvasRef.current.height / 2,
+        );
+        ctx.rotate((transform.rotate * Math.PI) / 180);
+        ctx.scale(transform.flipX ? -1 : 1, transform.flipY ? -1 : 1);
+        ctx.translate(
+          -canvasRef.current.width / 2,
+          -canvasRef.current.height / 2,
+        );
 
         // Draw image
-        ctx.drawImage(img, 0, 0)
-        
-        ctx.restore()
+        ctx.drawImage(img, 0, 0);
+
+        ctx.restore();
 
         // Apply crop if active
         if (transform.crop) {
-          const { x, y, width, height } = transform.crop
-          const imageData = ctx.getImageData(x, y, width, height)
-          
-          canvasRef.current.width = width
-          canvasRef.current.height = height
-          
-          ctx.putImageData(imageData, 0, 0)
+          const { x, y, width, height } = transform.crop;
+          const imageData = ctx.getImageData(x, y, width, height);
+
+          canvasRef.current.width = width;
+          canvasRef.current.height = height;
+
+          ctx.putImageData(imageData, 0, 0);
         }
 
-        addToHistory()
-      }
+        addToHistory();
+      };
     }, 200),
-    [adjustments, transform, history, historyIndex, addToHistory]
-  )
+    [adjustments, transform, history, historyIndex, addToHistory],
+  );
 
   // Handle undo/redo
   const handleUndo = useCallback(() => {
-    if (historyIndex <= 0) return
-    setHistoryIndex(prev => prev - 1)
-    
-    const img = new Image()
-    img.src = history[historyIndex - 1]
+    if (historyIndex <= 0) return;
+    setHistoryIndex((prev) => prev - 1);
+
+    const img = new Image();
+    img.src = history[historyIndex - 1];
     img.onload = () => {
-      const ctx = canvasRef.current?.getContext('2d')
-      if (!ctx || !canvasRef.current) return
-      
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-      ctx.drawImage(img, 0, 0)
-    }
-  }, [history, historyIndex])
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx || !canvasRef.current) return;
+
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.drawImage(img, 0, 0);
+    };
+  }, [history, historyIndex]);
 
   const handleRedo = useCallback(() => {
-    if (historyIndex >= history.length - 1) return
-    setHistoryIndex(prev => prev + 1)
-    
-    const img = new Image()
-    img.src = history[historyIndex + 1]
+    if (historyIndex >= history.length - 1) return;
+    setHistoryIndex((prev) => prev + 1);
+
+    const img = new Image();
+    img.src = history[historyIndex + 1];
     img.onload = () => {
-      const ctx = canvasRef.current?.getContext('2d')
-      if (!ctx || !canvasRef.current) return
-      
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-      ctx.drawImage(img, 0, 0)
-    }
-  }, [history, historyIndex])
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx || !canvasRef.current) return;
+
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.drawImage(img, 0, 0);
+    };
+  }, [history, historyIndex]);
 
   // Handle save
   const handleSave = useCallback(() => {
-    if (!canvasRef.current) return
-    setIsProcessing(true)
-    
+    if (!canvasRef.current) return;
+    setIsProcessing(true);
+
     try {
-      const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.85)
-      onSave(dataUrl)
+      const dataUrl = canvasRef.current.toDataURL("image/jpeg", 0.85);
+      onSave(dataUrl);
     } catch (error) {
-      console.error('Error saving image:', error)
+      console.error("Error saving image:", error);
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }, [onSave])
+  }, [onSave]);
 
   return (
     <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full mx-auto">
@@ -222,10 +229,7 @@ export default function AdvancedImageEditor({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Preview */}
         <div className="lg:col-span-2 bg-gray-50 rounded-lg p-4">
-          <canvas
-            ref={canvasRef}
-            className="max-w-full h-auto mx-auto"
-          />
+          <canvas ref={canvasRef} className="max-w-full h-auto mx-auto" />
         </div>
 
         {/* Controls */}
@@ -255,7 +259,7 @@ export default function AdvancedImageEditor({
           {/* Image adjustments */}
           <div className="space-y-4">
             <h3 className="font-medium">Koregavimai</h3>
-            
+
             <div>
               <label className="text-sm text-gray-600 flex items-center">
                 <SunMedium className="h-4 w-4 mr-2" />
@@ -267,8 +271,8 @@ export default function AdvancedImageEditor({
                 max={1.5}
                 step={0.01}
                 onChange={(value) => {
-                  setAdjustments(prev => ({ ...prev, brightness: value }))
-                  applyAdjustments()
+                  setAdjustments((prev) => ({ ...prev, brightness: value }));
+                  applyAdjustments();
                 }}
               />
             </div>
@@ -284,8 +288,8 @@ export default function AdvancedImageEditor({
                 max={1.5}
                 step={0.01}
                 onChange={(value) => {
-                  setAdjustments(prev => ({ ...prev, contrast: value }))
-                  applyAdjustments()
+                  setAdjustments((prev) => ({ ...prev, contrast: value }));
+                  applyAdjustments();
                 }}
               />
             </div>
@@ -301,8 +305,8 @@ export default function AdvancedImageEditor({
                 max={2}
                 step={0.01}
                 onChange={(value) => {
-                  setAdjustments(prev => ({ ...prev, saturation: value }))
-                  applyAdjustments()
+                  setAdjustments((prev) => ({ ...prev, saturation: value }));
+                  applyAdjustments();
                 }}
               />
             </div>
@@ -311,17 +315,17 @@ export default function AdvancedImageEditor({
           {/* Transform controls */}
           <div className="space-y-4">
             <h3 className="font-medium">Transformacija</h3>
-            
+
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setTransform(prev => ({
+                  setTransform((prev) => ({
                     ...prev,
-                    rotate: prev.rotate - 90
-                  }))
-                  applyAdjustments()
+                    rotate: prev.rotate - 90,
+                  }));
+                  applyAdjustments();
                 }}
                 icon={RotateCcw}
               >
@@ -331,11 +335,11 @@ export default function AdvancedImageEditor({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setTransform(prev => ({
+                  setTransform((prev) => ({
                     ...prev,
-                    rotate: prev.rotate + 90
-                  }))
-                  applyAdjustments()
+                    rotate: prev.rotate + 90,
+                  }));
+                  applyAdjustments();
                 }}
                 icon={RotateCw}
               >
@@ -345,11 +349,11 @@ export default function AdvancedImageEditor({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setTransform(prev => ({
+                  setTransform((prev) => ({
                     ...prev,
-                    flipX: !prev.flipX
-                  }))
-                  applyAdjustments()
+                    flipX: !prev.flipX,
+                  }));
+                  applyAdjustments();
                 }}
                 icon={FlipHorizontal}
               >
@@ -359,11 +363,11 @@ export default function AdvancedImageEditor({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setTransform(prev => ({
+                  setTransform((prev) => ({
                     ...prev,
-                    flipY: !prev.flipY
-                  }))
-                  applyAdjustments()
+                    flipY: !prev.flipY,
+                  }));
+                  applyAdjustments();
                 }}
                 icon={FlipVertical}
               >
@@ -377,17 +381,13 @@ export default function AdvancedImageEditor({
               onClick={() => setIsCropping(!isCropping)}
               icon={Crop}
             >
-              {isCropping ? 'Atšaukti apkarpymą' : 'Apkarpyti'}
+              {isCropping ? "Atšaukti apkarpymą" : "Apkarpyti"}
             </Button>
           </div>
 
           {/* Action buttons */}
           <div className="flex gap-3 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={onCancel}
-            >
+            <Button variant="outline" className="flex-1" onClick={onCancel}>
               Atšaukti
             </Button>
             <Button
@@ -397,11 +397,11 @@ export default function AdvancedImageEditor({
               disabled={isProcessing}
               icon={Save}
             >
-              {isProcessing ? 'Išsaugoma...' : 'Išsaugoti'}
+              {isProcessing ? "Išsaugoma..." : "Išsaugoti"}
             </Button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
