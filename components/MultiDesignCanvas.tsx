@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { debounce } from 'lodash'
 import html2canvas from 'html2canvas'
@@ -42,83 +42,111 @@ export default function MultiDesignCanvas({
   const lastPositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const movementThreshold = 2
 
-  const generatePreview = useCallback(
-    debounce(async () => {
-      if (!canvasRef.current || designs.length === 0) {
-        onPreviewGenerated(null)
-        return
-      }
+  // Refs for stable callbacks
+  const designsRef = useRef(designs)
+  const activeDesignIdRef = useRef(activeDesignId)
+  const onUpdateDesignRef = useRef(onUpdateDesign)
+  const isDraggingRef = useRef(isDragging)
+  const onPreviewGeneratedRef = useRef(onPreviewGenerated)
 
-      try {
-        setIsGenerating(true)
-        setError(null)
-        
-        const canvas = await html2canvas(canvasRef.current, {
-          backgroundColor: null,
-          scale: 1,
-          logging: false,
-          useCORS: true,
-          allowTaint: true
-        })
-        
-        const preview = canvas.toDataURL('image/jpeg', 0.85)
-        onPreviewGenerated(preview)
-      } catch (error) {
-        console.error('Error generating preview:', error)
-        setError('Nepavyko sugeneruoti peržiūros')
-        onPreviewGenerated(null)
-      } finally {
-        setIsGenerating(false)
-      }
-    }, 1000),
-    [designs, onPreviewGenerated]
+  // Keep refs updated
+  useEffect(() => {
+    designsRef.current = designs
+    activeDesignIdRef.current = activeDesignId
+    onUpdateDesignRef.current = onUpdateDesign
+    isDraggingRef.current = isDragging
+    onPreviewGeneratedRef.current = onPreviewGenerated
+  })
+
+  const generatePreview = useMemo(
+    () =>
+      debounce(async () => {
+        if (!canvasRef.current || designsRef.current.length === 0) {
+          onPreviewGeneratedRef.current(null)
+          return
+        }
+
+        try {
+          setIsGenerating(true)
+          setError(null)
+
+          const canvas = await html2canvas(canvasRef.current, {
+            backgroundColor: null,
+            scale: 1,
+            logging: false,
+            useCORS: true,
+            allowTaint: true,
+          })
+
+          const preview = canvas.toDataURL('image/jpeg', 0.85)
+          onPreviewGeneratedRef.current(preview)
+        } catch (error) {
+          console.error('Error generating preview:', error)
+          setError('Nepavyko sugeneruoti peržiūros')
+          onPreviewGeneratedRef.current(null)
+        } finally {
+          setIsGenerating(false)
+        }
+      }, 1000),
+    []
   )
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !activeDesignId) return
-    
+    if (!isDraggingRef.current || !activeDesignIdRef.current) return
+
     const movementX = e.movementX
     const movementY = e.movementY
-    
-    if (Math.abs(movementX) < movementThreshold && Math.abs(movementY) < movementThreshold) {
+
+    if (
+      Math.abs(movementX) < movementThreshold &&
+      Math.abs(movementY) < movementThreshold
+    ) {
       return
     }
 
-    const activeDesign = designs.find(d => d.id === activeDesignId)
+    const activeDesign = designsRef.current.find(
+      (d) => d.id === activeDesignIdRef.current
+    )
     if (!activeDesign) return
 
     const newPosition = {
       x: activeDesign.position.x + movementX,
-      y: activeDesign.position.y + movementY
+      y: activeDesign.position.y + movementY,
     }
-    
-    onUpdateDesign(activeDesignId, { position: newPosition })
-  }, [isDragging, activeDesignId, designs, onUpdateDesign])
+
+    onUpdateDesignRef.current(activeDesignIdRef.current, {
+      position: newPosition,
+    })
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   useEffect(() => {
     if (!isDragging) {
       generatePreview()
     }
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
       generatePreview.cancel()
     }
-  }, [isDragging, handleMouseMove, generatePreview])
+  }, [isDragging, generatePreview])
 
   const handleMouseDown = (e: React.MouseEvent, designId: string) => {
     e.preventDefault()
     setIsDragging(true)
     onSelectDesign(designId)
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-    generatePreview()
   }
 
   return (
