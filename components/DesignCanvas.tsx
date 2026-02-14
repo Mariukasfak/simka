@@ -35,33 +35,38 @@ export default function DesignCanvas({
     setRotation(0)
   }, [])
 
-  // Update position when dragging
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return
-    
-    const movementX = e.movementX
-    const movementY = e.movementY
-    
-    setPosition(prev => ({
-      x: prev.x + movementX,
-      y: prev.y + movementY
-    }))
-  }, [isDragging])
-
   // Handle start dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     setIsDragging(true)
+  }, [])
+
+  // Manage drag listeners
+  useEffect(() => {
+    if (!isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const movementX = e.movementX
+      const movementY = e.movementY
+
+      setPosition(prev => ({
+        x: prev.x + movementX,
+        y: prev.y + movementY
+      }))
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
-  }, [handleMouseMove])
 
-  // Handle stop dragging
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
-  }, [handleMouseMove])
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging])
 
   // Touch handling
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -93,14 +98,6 @@ export default function DesignCanvas({
     document.addEventListener('touchmove', handleTouchMove, { passive: false })
     document.addEventListener('touchend', handleTouchEnd)
   }, [])
-
-  // Clean up event listeners
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [handleMouseMove, handleMouseUp])
 
   // Generate preview when design elements change
   const generatePreview = useCallback(
