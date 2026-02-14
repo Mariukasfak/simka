@@ -1,21 +1,23 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function formatPrice(price: number) {
-  return new Intl.NumberFormat('lt-LT', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(price)
+  return new Intl.NumberFormat("lt-LT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(price);
 }
 
 export function generateOrderNumber() {
-  const date = new Date()
-  const year = date.getFullYear().toString().slice(-2)
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `SIE${year}${month}${random}`
+  const date = new Date();
+  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  return `SIE${year}${month}${random}`;
 }
