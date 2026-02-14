@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf .next",
+    "test": "node --experimental-strip-types --loader ./scripts/test-loader.mjs --test **/*.test.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
