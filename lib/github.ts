@@ -1,18 +1,15 @@
 import { Octokit } from 'octokit'
 
-const GITHUB_APP_ID = process.env.NEXT_PUBLIC_GITHUB_APP_ID
-const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
-
-if (!GITHUB_APP_ID || !GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-  throw new Error('Missing GitHub environment variables')
-}
-
-export const octokit = new Octokit({
-  auth: GITHUB_CLIENT_SECRET,
-})
+// Removed top-level environment variable check to prevent build failures
 
 export async function getGitHubAccessToken(code: string) {
+  const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID
+  const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
+
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    throw new Error('Missing GitHub environment variables (GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET)')
+  }
+
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
