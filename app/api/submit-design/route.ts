@@ -3,16 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
-
-// Formų validacijos schema
-const orderFormSchema = z.object({
-  name: z.string().min(2, { message: "Vardas turi būti bent 2 simbolių ilgio" }),
-  email: z.string().email({ message: "Neteisingas el. pašto formatas" }),
-  phone: z.string().optional(),
-  size: z.string().min(1, { message: "Pasirinkite dydį" }),
-  quantity: z.number().min(1, { message: "Kiekis turi būti bent 1" }).max(1000),
-  comments: z.string().optional(),
-});
+import { orderFormSchema } from '@/lib/validations/submit-design';
 
 // Nurodome Next.js, kad šis maršrutas turi būti dinaminis
 export const dynamic = 'force-dynamic';
@@ -25,8 +16,8 @@ export async function POST(request: Request) {
     const validatedData = orderFormSchema.parse(data);
     
     // Create detailed product info for email
-    const productInfo = `${data.product.name} (${data.product.id})`;
-    const selectedAreas = data.printAreas?.map((area: string) => {
+    const productInfo = `${validatedData.product.name} (${validatedData.product.id})`;
+    const selectedAreas = validatedData.printAreas?.map((area: string) => {
       const areaNames: Record<string, string> = {
         'front': 'Priekis',
         'back': 'Nugara',
@@ -48,7 +39,7 @@ export async function POST(request: Request) {
       <p>Produktas: ${productInfo}</p>
       <p>Dydis: ${validatedData.size}</p>
       <p>Kiekis: ${validatedData.quantity}</p>
-      <p>Kaina: €${data.totalPrice.toFixed(2)}</p>
+      <p>Kaina: €${validatedData.totalPrice.toFixed(2)}</p>
       
       <p><strong>Spausdinimo vietos:</strong> ${selectedAreas}</p>
       
@@ -82,19 +73,19 @@ export async function POST(request: Request) {
             customer_name: validatedData.name,
             customer_email: validatedData.email,
             customer_phone: validatedData.phone,
-            product_type: data.product.type,
-            product_variant: data.product.id,
-            product_name: data.product.name,
-            design_previews: data.designPreviews || {},
-            design_states: data.designStates || {},
+            product_type: validatedData.product.type,
+            product_variant: validatedData.product.id,
+            product_name: validatedData.product.name,
+            design_previews: validatedData.designPreviews || {},
+            design_states: validatedData.designStates || {},
             quantity: validatedData.quantity,
             size: validatedData.size,
             comments: validatedData.comments,
-            total_price: data.totalPrice,
+            total_price: validatedData.totalPrice,
             status: 'pending',
             created_at: new Date().toISOString(),
             // Išsaugome originalų logotipą
-            original_logo: data.uploadedImage || null,
+            original_logo: validatedData.uploadedImage || null,
           });
 
         if (dbError) {
@@ -130,7 +121,7 @@ export async function POST(request: Request) {
       const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
 
       // Sudarome priedų sąrašą - dabar naudojame PNG formatą, kad išsaugotume permatomumą
-      const attachments = Object.entries(data.designPreviews || {})
+      const attachments = Object.entries(validatedData.designPreviews || {})
         .filter(([_, url]) => url)
         .map(([area, url]) => {
           const areaNames: Record<string, string> = {
@@ -148,10 +139,10 @@ export async function POST(request: Request) {
         });
       
       // Pridedame originalų logotipą kaip priedą
-      if (data.uploadedImage) {
+      if (validatedData.uploadedImage) {
         attachments.push({
           filename: 'original-logo.png',
-          path: data.uploadedImage,
+          path: validatedData.uploadedImage,
           encoding: 'base64',
           contentType: 'image/png'
         });
