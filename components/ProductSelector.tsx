@@ -35,10 +35,12 @@ export default function ProductSelector({
             whileTap={{ scale: 0.98 }}
           >
             <div className="relative aspect-square bg-white rounded overflow-hidden">
-              <img
+              <Image
                 src={product.imageUrl}
                 alt={product.name}
-                className="w-full h-full object-contain p-2"
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-contain p-2"
               />
             </div>
             
