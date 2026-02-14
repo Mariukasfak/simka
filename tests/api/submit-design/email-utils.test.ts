@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { generateEmailHtml, escapeHtml } from './email-utils.ts';
+import { generateEmailHtml, escapeHtml } from '../../../app/api/submit-design/email-utils';
 
 test('generateEmailHtml escapes malicious input', () => {
   const validatedData = {
