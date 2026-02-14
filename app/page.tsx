@@ -81,19 +81,20 @@ function HomeContent() {
   
   const [selectedProduct, setSelectedProduct] = useState<Product>(products[1]); // Džemperis (šviesus) kaip numatytasis
 
-  // Load product from URL params - optimizuotas su useCallback
+  // Load product from URL params - optimizuotas priklausomybėms
+  const productId = searchParams?.get('product')
+
   useEffect(() => {
-    if (searchParams) {
-      const productId = searchParams.get('product')
-      if (productId) {
-        const product = products.find(p => p.id === productId)
-        if (product) {
-          setSelectedProduct(product)
-        }
+    if (productId) {
+      const product = products.find(p => p.id === productId)
+      if (product) {
+        setSelectedProduct(product)
       }
     }
-    
-    // Simulate loading only if design tool is visible
+  }, [productId, products])
+
+  // Simulate loading only if design tool is visible
+  useEffect(() => {
     if (showDesignTool) {
       const timer = setTimeout(() => {
         setIsLoading(false)
@@ -104,7 +105,7 @@ function HomeContent() {
       // If design tool is not visible, we don't need loading state
       setIsLoading(false)
     }
-  }, [searchParams, products, showDesignTool])
+  }, [showDesignTool])
 
   // Reset funkcija - optimizuota su useCallback
   const resetPreviews = useCallback(() => {
