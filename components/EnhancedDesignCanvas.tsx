@@ -80,8 +80,8 @@ export default function EnhancedDesignCanvas({
         previewContainer.innerHTML = originalCanvas.innerHTML;
         
         // Suraskime logotipo elementą ir pritaikykime tiksliai tokią pačią transformaciją
-        const originalLogo = originalCanvas.querySelector('.draggable-image');
-        const previewLogo = previewContainer.querySelector('.draggable-image');
+        const originalLogo = originalCanvas.querySelector('.draggable-image') as HTMLElement;
+        const previewLogo = previewContainer.querySelector('.draggable-image') as HTMLElement;
         
         if (originalLogo && previewLogo) {
           previewLogo.style.transform = originalLogo.style.transform;
@@ -97,7 +97,7 @@ export default function EnhancedDesignCanvas({
           allowTaint: true,
           // Neliesti transformacijos
           onclone: (clonedDoc, clonedElem) => {
-            const clonedLogo = clonedElem.querySelector('.draggable-image');
+            const clonedLogo = clonedElem.querySelector('.draggable-image') as HTMLElement;
             if (clonedLogo && originalLogo) {
               clonedLogo.style.transform = originalLogo.style.transform;
             }
@@ -162,8 +162,8 @@ export default function EnhancedDesignCanvas({
       previewContainer.innerHTML = originalCanvas.innerHTML;
       
       // Suraskime logotipo elementą 
-      const originalLogo = originalCanvas.querySelector('.draggable-image');
-      const previewLogo = previewContainer.querySelector('.draggable-image');
+      const originalLogo = originalCanvas.querySelector('.draggable-image') as HTMLElement;
+      const previewLogo = previewContainer.querySelector('.draggable-image') as HTMLElement;
       
       if (originalLogo && previewLogo) {
         // Išsaugome originalią transformaciją
@@ -215,7 +215,7 @@ export default function EnhancedDesignCanvas({
         useCORS: true,
         allowTaint: true,
         onclone: (clonedDoc, clonedElem) => {
-          const clonedLogo = clonedElem.querySelector('.draggable-image');
+          const clonedLogo = clonedElem.querySelector('.draggable-image') as HTMLElement;
           if (clonedLogo && previewLogo) {
             clonedLogo.style.transform = previewLogo.style.transform;
           }

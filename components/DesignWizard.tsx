@@ -1,4 +1,3 @@
-// filepath: /workspaces/simka/components/DesignWizardStub.tsx
 'use client'
 
 import React from 'react'
@@ -14,10 +13,6 @@ interface DesignWizardProps {
   designPreviews: Record<string, string | null>
 }
 
-/**
- * Šis komponentas yra laikinas sprendimas, kuris leidžia išvengti konfliktų
- * tarp naujo AdvancedDesignWizard ir esamo DesignWizard
- */
 export default function DesignWizard({
   currentStep,
   setCurrentStep,
