@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Formų validacijos schema
 const orderFormSchema = z.object({
@@ -19,6 +20,18 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    // Basic Rate Limiting
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+    const isAllowed = rateLimit(ip, 5, 3600000); // 5 requests per hour per IP
+
+    if (!isAllowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const data = await request.json();
     
     // Validuojame duomenis
@@ -66,7 +79,8 @@ export async function POST(request: Request) {
     
     try {
       // Supabase cookies() turi būti async apdoroti
-      const cookiesStore = cookies();
+      const cookiesStore = await cookies();
+      // @ts-expect-error - createRouteHandlerClient expects Promise but we need sync for runtime compatibility
       const supabase = createRouteHandlerClient({ cookies: () => cookiesStore });
       
       // Gauname vartotojo sesiją
