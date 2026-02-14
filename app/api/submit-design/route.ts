@@ -111,23 +111,38 @@ export async function POST(request: Request) {
     
     // Bandome siųsti el. laišką
     try {
-      // Sukonfigūruojame nodemailer pagal Hostinger SMTP nustatymus
+      // Patikriname ar yra visi reikiami el. pašto konfigūracijos kintamieji
+      const {
+        EMAIL_SERVER,
+        EMAIL_PORT,
+        EMAIL_USER,
+        EMAIL_PASSWORD,
+        EMAIL_TO,
+        EMAIL_FROM
+      } = process.env;
+
+      if (!EMAIL_SERVER || !EMAIL_USER || !EMAIL_PASSWORD || !EMAIL_TO || !EMAIL_FROM) {
+        console.error('Missing email configuration. Skipping email sending.');
+        throw new Error('Email configuration is incomplete');
+      }
+
+      // Sukonfigūruojame nodemailer
       const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SERVER || 'smtp.hostinger.com',
-        port: Number(process.env.EMAIL_PORT) || 465,
-        secure: Number(process.env.EMAIL_PORT) === 465, // true naudojant 465 portą
+        host: EMAIL_SERVER,
+        port: Number(EMAIL_PORT) || 465,
+        secure: Number(EMAIL_PORT) === 465 || !EMAIL_PORT, // true naudojant 465 portą arba jei portas nenurodytas (numatytasis 465)
         auth: {
-          user: process.env.EMAIL_USER || 'labas@siemka.lt',
-          pass: process.env.EMAIL_PASSWORD || 'Simona672as.',
+          user: EMAIL_USER,
+          pass: EMAIL_PASSWORD,
         },
         // Nustatome didesnius timeout parametrus
         connectionTimeout: 10000, // 10 sekundžių
         socketTimeout: 20000, // 20 sekundžių
-        debug: true, // Laikinas debuginimas
+        debug: false,
       });
       
-      // Nustatome gavėjo el. paštą su numatyta reikšme
-      const recipientEmail = process.env.EMAIL_TO || "labas@siemka.lt";
+      // Nustatome gavėjo el. paštą
+      const recipientEmail = EMAIL_TO;
 
       // Sudarome priedų sąrašą - dabar naudojame PNG formatą, kad išsaugotume permatomumą
       const attachments = Object.entries(data.designPreviews || {})
@@ -159,7 +174,7 @@ export async function POST(request: Request) {
       
       // Siunčiame el. laišką
       await transporter.sendMail({
-        from: `"Siemka Design Tool" <${process.env.EMAIL_FROM || "labas@siemka.lt"}>`,
+        from: `"Siemka Design Tool" <${EMAIL_FROM}>`,
         to: recipientEmail,
         subject: `Naujas dizaino užsakymas - ${validatedData.name}`,
         html: emailHtml,
