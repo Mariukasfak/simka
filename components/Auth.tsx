@@ -3,6 +3,7 @@
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 export default function Auth() {
@@ -35,7 +36,7 @@ export default function Auth() {
             Trūksta Supabase aplinkos kintamųjų. Autentifikacija laikinai neveikia.
           </p>
           <p className="text-sm text-gray-500">
-            Dėl testavimo galite tęsti su <a href="/" className="text-blue-500 hover:underline">pagrindiniu puslapiu</a>.
+            Dėl testavimo galite tęsti su <Link href="/" className="text-blue-500 hover:underline">pagrindiniu puslapiu</Link>.
           </p>
         </div>
       </div>
