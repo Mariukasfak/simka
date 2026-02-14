@@ -742,7 +742,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti dydį</h4>
-                  <p className="text-sm text-gray-600">Naudokite &quot;Dydis&quot; slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
+                  <p className="text-sm text-gray-600">Naudokite „Dydis&quot; slankiklį, kad padidintumėte arba sumažintumėte logotipą.</p>
                 </div>
               </div>
               
@@ -766,7 +766,7 @@ export default function EnhancedDesignCanvas({
                 </div>
                 <div>
                   <h4 className="text-sm font-medium">Keisti permatomumą</h4>
-                  <p className="text-sm text-gray-600">Koreguokite &quot;Permatomumas&quot; slankiklį, kad pakeistumėte logotipo ryškumą.</p>
+                  <p className="text-sm text-gray-600">Koreguokite „Permatomumas&quot; slankiklį, kad pakeistumėte logotipo ryškumą.</p>
                 </div>
               </div>
               
