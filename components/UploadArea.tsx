@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, Image as ImageIcon, X, Edit2 } from 'lucide-react'
-import { Button } from './ui/Button'
+import { Button, buttonVariants } from './ui/Button'
 import ImageEditor from './ImageEditor'
 
 interface UploadAreaProps {
@@ -172,11 +172,21 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
               isDragging 
                 ? 'border-accent-500 bg-accent-50' 
                 : 'border-gray-300 hover:border-gray-400'
             }`}
+            role="button"
+            tabIndex={0}
+            aria-label="Įkelti paveikslėlį: vilkite failą čia arba paspauskite, kad pasirinktumėte"
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
             onDragEnter={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -195,6 +205,7 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
           >
             <div className="flex flex-col items-center">
               <Upload 
+                aria-hidden="true"
                 className={`w-12 h-12 mb-3 ${
                   isDragging ? 'text-accent-500' : 'text-gray-400'
                 }`}
@@ -202,13 +213,12 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
               <p className="mb-2 text-sm text-gray-700">
                 <span className="font-medium">Vilkite paveikslėlį čia</span> arba
               </p>
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="default"
-                icon={ImageIcon}
+              <div
+                className={buttonVariants({ variant: 'default' })}
               >
+                <ImageIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                 Pasirinkti failą
-              </Button>
+              </div>
               <p className="mt-2 text-xs text-gray-500">
                 PNG, JPG, GIF arba SVG (iki 3MB)
               </p>
@@ -218,14 +228,21 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
       </AnimatePresence>
 
       {isUploading && (
-        <div className="mt-4">
+        <div
+          className="mt-4"
+          role="progressbar"
+          aria-valuenow={uploadProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Įkėlimo eiga"
+        >
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div 
               className="bg-accent-600 h-2.5 rounded-full transition-all duration-300" 
               style={{ width: `${uploadProgress}%` }}
             ></div>
           </div>
-          <p className="text-xs text-gray-500 mt-1 text-center">
+          <p className="text-xs text-gray-500 mt-1 text-center" aria-live="polite">
             {uploadProgress < 100 ? 'Įkeliama...' : 'Apdorojama...'}
           </p>
         </div>
@@ -236,6 +253,7 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-600"
+          role="alert"
         >
           {error}
         </motion.div>
