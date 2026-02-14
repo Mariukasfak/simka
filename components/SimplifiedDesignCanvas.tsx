@@ -447,9 +447,9 @@ export default function SimplifiedDesignCanvas({
       {/* Pagalbinis tekstas */}
       <div className="text-sm text-gray-500 text-center">
         {locked ? (
-          <p>Dizainas užrakintas. Atlikus pakeitimus, paspauskite „Išsaugoti".</p>
+          <p>Dizainas užrakintas. Atlikus pakeitimus, paspauskite „Išsaugoti“.</p>
         ) : (
-          <p>Tempkite logotipą, koreguokite dydį ir pasukimą. Tada paspauskite „Užrakinti" mygtuką.</p>
+          <p>Tempkite logotipą, koreguokite dydį ir pasukimą. Tada paspauskite „Užrakinti“ mygtuką.</p>
         )}
       </div>
     </div>
