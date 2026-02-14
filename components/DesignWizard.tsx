@@ -1,4 +1,3 @@
-// filepath: /workspaces/simka/components/DesignWizardStub.tsx
 'use client'
 
 import React from 'react'
