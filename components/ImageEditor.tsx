@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from './ui/Button'
 import {
   Undo2,
@@ -27,6 +27,13 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
   const [history, setHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
 
+  const addToHistory = useCallback(() => {
+    if (!canvasRef.current) return
+    const dataUrl = canvasRef.current.toDataURL()
+    setHistory(prev => [...prev.slice(0, historyIndex + 1), dataUrl])
+    setHistoryIndex(prev => prev + 1)
+  }, [historyIndex])
+
   useEffect(() => {
     const img = new Image()
     img.src = imageUrl
@@ -43,17 +50,10 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
       ctx.drawImage(img, 0, 0)
       
       // Add to history
-      // eslint-disable-next-line react-hooks/exhaustive-deps
       addToHistory()
     }
-  }, [imageUrl])
+  }, [imageUrl, addToHistory])
 
-  const addToHistory = () => {
-    if (!canvasRef.current) return
-    const dataUrl = canvasRef.current.toDataURL()
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), dataUrl])
-    setHistoryIndex(prev => prev + 1)
-  }
 
   const handleUndo = () => {
     if (historyIndex <= 0 || !canvasRef.current) return
