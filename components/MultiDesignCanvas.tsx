@@ -263,8 +263,14 @@ export default function MultiDesignCanvas({
           </div>
 
           <div>
-            <label className="text-sm text-gray-600">Dydis</label>
+            <label
+              htmlFor="multi-size-slider"
+              className="text-sm text-gray-600"
+            >
+              Dydis
+            </label>
             <Slider
+              id="multi-size-slider"
               value={designs.find(d => d.id === activeDesignId)?.scale || 1}
               min={0.2}
               max={3}
@@ -274,8 +280,14 @@ export default function MultiDesignCanvas({
           </div>
 
           <div>
-            <label className="text-sm text-gray-600">Permatomumas</label>
+            <label
+              htmlFor="multi-opacity-slider"
+              className="text-sm text-gray-600"
+            >
+              Permatomumas
+            </label>
             <Slider
+              id="multi-opacity-slider"
               value={designs.find(d => d.id === activeDesignId)?.opacity || 1}
               min={0.1}
               max={1}

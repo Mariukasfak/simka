@@ -26,7 +26,10 @@ export default function Controls({
     <div className="space-y-6 p-6 bg-white rounded-lg shadow-sm">
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-sm font-medium text-brand-900">
+          <label
+            htmlFor="controls-size-slider"
+            className="text-sm font-medium text-brand-900"
+          >
             Dydis
           </label>
           <span className="text-sm text-brand-600">
@@ -34,6 +37,7 @@ export default function Controls({
           </span>
         </div>
         <Slider
+          id="controls-size-slider"
           value={scale}
           min={0.2}
           max={2}
@@ -44,7 +48,10 @@ export default function Controls({
 
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label className="text-sm font-medium text-brand-900">
+          <label
+            htmlFor="controls-opacity-slider"
+            className="text-sm font-medium text-brand-900"
+          >
             Permatomumas
           </label>
           <span className="text-sm text-brand-600">
@@ -52,6 +59,7 @@ export default function Controls({
           </span>
         </div>
         <Slider
+          id="controls-opacity-slider"
           value={opacity}
           min={0.1}
           max={1}
