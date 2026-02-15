@@ -56,6 +56,7 @@ export default function EnhancedDesignCanvas({
   }, [designState.position, designState.relativePrintAreaPosition])
   
   // Optimizuotas peržiūros generavimas
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const generatePreview = useCallback(
     debounce(async (forceGenerate = false) => {
       if (!canvasRef.current || !uploadedImage || (previewInProgressRef.current && !forceGenerate)) {

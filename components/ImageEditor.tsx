@@ -43,6 +43,7 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
       ctx.drawImage(img, 0, 0)
       
       // Add to history
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       addToHistory()
     }
   }, [imageUrl])

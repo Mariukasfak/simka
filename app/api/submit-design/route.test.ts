@@ -75,8 +75,8 @@ describe('Submit Design API', () => {
 
     // Import the module under test dynamically to ensure mocks are active
     // @ts-expect-error
-    const module = await import('./route.ts');
-    POST = module.POST;
+    const routeModule = await import('./route.ts');
+    POST = routeModule.POST;
   });
 
   after(() => {

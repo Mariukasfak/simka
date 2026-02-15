@@ -461,7 +461,8 @@ export default function RelativePositionDraggableImage({
       updateContainerDimensions();
       updateBounds();
     }
-  }, [printAreaRef?.current, containerRef.current, setInitialPosition, updateBounds, updateContainerDimensions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setInitialPosition, updateBounds, updateContainerDimensions]);
 
   // Įvykių valdiklių pridėjimas/pašalinimas
   useEffect(() => {
