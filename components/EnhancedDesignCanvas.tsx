@@ -47,6 +47,12 @@ export default function EnhancedDesignCanvas({
   const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
   const isDraggingRef = useRef(false)
 
+  // ⚡ PERFORMANCE: Direct DOM updates for coordinates to avoid re-renders
+  const xRef = useRef<HTMLSpanElement>(null)
+  const yRef = useRef<HTMLSpanElement>(null)
+  const relXRef = useRef<HTMLSpanElement>(null)
+  const relYRef = useRef<HTMLSpanElement>(null)
+
   // ⚡ PERFORMANCE: Sync local state with props when NOT dragging
   useEffect(() => {
     if (!isDraggingRef.current) {
@@ -253,7 +259,10 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
 
-    setDragPosition(newPosition);
+    // ⚡ PERFORMANCE: Direct DOM update to avoid re-rendering entire component
+    // setDragPosition(newPosition); <-- Removed to prevent re-render
+    if (xRef.current) xRef.current.innerText = Math.round(newPosition.x).toString();
+    if (yRef.current) yRef.current.innerText = Math.round(newPosition.y).toString();
   }, [showInitialTooltip]);
 
   // ⚡ PERFORMANCE: Update only local state during drag
@@ -270,7 +279,10 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
     
-    setDragRelativePosition(relPosition);
+    // ⚡ PERFORMANCE: Direct DOM update to avoid re-rendering entire component
+    // setDragRelativePosition(relPosition); <-- Removed to prevent re-render
+    if (relXRef.current) relXRef.current.innerText = Math.round(relPosition.xPercent).toString();
+    if (relYRef.current) relYRef.current.innerText = Math.round(relPosition.yPercent).toString();
   }, [showInitialTooltip]);
 
   // ⚡ PERFORMANCE: Update parent state only on drag end
@@ -619,8 +631,8 @@ export default function EnhancedDesignCanvas({
       </div>
 
       <div className="flex justify-between text-sm text-gray-500">
-        <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
-        <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
+        <span>X: <span ref={xRef}>{Math.round(dragPosition.x)}</span></span> {/* ⚡ Using refs for direct update */}
+        <span>Y: <span ref={yRef}>{Math.round(dragPosition.y)}</span></span> {/* ⚡ Using refs for direct update */}
         <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
@@ -628,8 +640,8 @@ export default function EnhancedDesignCanvas({
       {process.env.NODE_ENV === 'development' && dragRelativePosition && ( /* ⚡ Using local state */
         <div className="mt-2 p-2 bg-gray-100 text-xs text-gray-700 rounded">
           <div className="flex justify-between">
-            <span>RelX: {Math.round(dragRelativePosition.xPercent)}%</span>
-            <span>RelY: {Math.round(dragRelativePosition.yPercent)}%</span>
+            <span>RelX: <span ref={relXRef}>{Math.round(dragRelativePosition.xPercent)}</span>%</span>
+            <span>RelY: <span ref={relYRef}>{Math.round(dragRelativePosition.yPercent)}</span>%</span>
             <span>{designState.locked ? '🔒 Užrakinta' : '🔓 Atrakinta'}</span>
           </div>
         </div>
