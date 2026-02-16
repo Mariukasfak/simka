@@ -596,10 +596,15 @@ export default function EnhancedDesignCanvas({
             
             {/* Pradinis patarimas kaip redaguoti dizainą */}
             {showInitialTooltip && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-accent-100 text-accent-800 p-3 rounded-lg shadow-lg border border-accent-200 max-w-xs text-center z-30">
+              <div
+                role="region"
+                aria-label="Patarimas"
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-accent-100 text-accent-800 p-3 rounded-lg shadow-lg border border-accent-200 max-w-xs text-center z-30"
+              >
                 <button 
                   onClick={() => setShowInitialTooltip(false)}
                   className="absolute top-1 right-1 text-accent-500 hover:text-accent-700"
+                  aria-label="Uždaryti patarimą"
                 >
                   <X size={16} />
                 </button>
@@ -710,13 +715,24 @@ export default function EnhancedDesignCanvas({
       
       {/* Pagalbos modalas */}
       {showHelp && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="help-modal-title"
+        >
           <div className="bg-white rounded-lg p-6 max-w-lg mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Kaip naudotis dizaino įrankiu</h3>
+              <h3
+                id="help-modal-title"
+                className="text-lg font-bold"
+              >
+                Kaip naudotis dizaino įrankiu
+              </h3>
               <button 
                 onClick={() => setShowHelp(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Uždaryti pagalbą"
               >
                 <X size={20} />
               </button>
