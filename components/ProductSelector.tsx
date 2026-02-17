@@ -21,12 +21,18 @@ export default function ProductSelector({
         Pasirinkite produktą
       </h2>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div
+        className="grid grid-cols-2 gap-4"
+        role="group"
+        aria-label="Produkto pasirinkimas"
+      >
         {products.map((product) => (
           <motion.button
             key={product.id}
             onClick={() => onSelect(product)}
-            className={`relative p-4 rounded-lg border-2 transition-colors ${
+            aria-pressed={selectedProduct.id === product.id}
+            aria-label={`${product.name}, kaina ${product.price}€${selectedProduct.id === product.id ? ', pasirinkta' : ''}`}
+            className={`relative p-4 rounded-lg border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${
               selectedProduct.id === product.id
                 ? 'border-accent-500 bg-accent-50'
                 : 'border-gray-200 hover:border-gray-300'
@@ -37,14 +43,14 @@ export default function ProductSelector({
             <div className="relative aspect-square bg-white rounded overflow-hidden">
               <Image
                 src={product.imageUrl}
-                alt={product.name}
+                alt=""
                 fill
                 sizes="(max-width: 768px) 50vw, 33vw"
                 className="object-contain p-2"
               />
             </div>
             
-            <div className="mt-3 text-center">
+            <div className="mt-3 text-center" aria-hidden="true">
               <h3 className="text-sm font-medium text-brand-900">
                 {product.name}
               </h3>
@@ -58,6 +64,7 @@ export default function ProductSelector({
                 className="absolute -top-2 -right-2 w-6 h-6 bg-accent-500 rounded-full flex items-center justify-center"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
+                aria-hidden="true"
               >
                 <svg
                   className="w-4 h-4 text-white"
