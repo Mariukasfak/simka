@@ -56,6 +56,12 @@ export default function RelativePositionDraggableImage({
   const positionChangeTimeout = useRef<NodeJS.Timeout | null>(null)
   const containerDimensionsRef = useRef<{ width: number, height: number }>({ width: 0, height: 0 })
 
+  // PERFORMANCE OPTIMIZATION: Cache rects during drag to avoid expensive getBoundingClientRect calls
+  const dragCacheRef = useRef<{
+    containerRect: DOMRect | null;
+    printAreaRect: DOMRect | null;
+  }>({ containerRect: null, printAreaRect: null });
+
   // Konteinerio dimensijų atnaujinimas
   const updateContainerDimensions = useCallback(() => {
     if (!containerRef.current) return;
@@ -79,13 +85,17 @@ export default function RelativePositionDraggableImage({
   }, []);
 
   // Konvertuoja absoliučią poziciją į santykinę
-  const absoluteToRelativePosition = useCallback((absPos: DesignPosition): { xPercent: number, yPercent: number } => {
+  const absoluteToRelativePosition = useCallback((
+    absPos: DesignPosition,
+    cachedRects?: { containerRect: DOMRect | null, printAreaRect: DOMRect | null }
+  ): { xPercent: number, yPercent: number } => {
     if (!containerRef.current || !printAreaRef?.current) {
       return { xPercent: 50, yPercent: 50 };
     }
     
-    const container = containerRef.current.getBoundingClientRect();
-    const printArea = printAreaRef.current.getBoundingClientRect();
+    // Use cached rects if available (during drag), otherwise get fresh ones
+    const container = cachedRects?.containerRect || containerRef.current.getBoundingClientRect();
+    const printArea = cachedRects?.printAreaRect || printAreaRef.current.getBoundingClientRect();
     
     // PATOBULINTA: Skaičiuojame santykinę poziciją printArea ribose
     // Ši formulė užtikrina, kad pozicija būtų išreikšta procentais nuo printArea viršutinio kairiojo kampo
@@ -244,9 +254,13 @@ export default function RelativePositionDraggableImage({
   }, [bounds, relativeToAbsolutePosition, updateElementPosition]);
 
   // Pozicijos atnaujinimas iš absoliučios pozicijos
-  const updatePositionFromAbsolute = useCallback((x: number, y: number) => {
+  const updatePositionFromAbsolute = useCallback((
+    x: number,
+    y: number,
+    cachedRects?: { containerRect: DOMRect | null, printAreaRect: DOMRect | null }
+  ) => {
     // Konvertuojame į santykinę poziciją
-    const relPos = absoluteToRelativePosition({ x, y });
+    const relPos = absoluteToRelativePosition({ x, y }, cachedRects);
     
     // Ribojame santykinę poziciją
     const boundedXPercent = Math.max(bounds.left, Math.min(bounds.right, relPos.xPercent));
@@ -266,6 +280,14 @@ export default function RelativePositionDraggableImage({
     e.preventDefault();
     setIsDragging(true);
     
+    // Cache dimensions for performance during drag
+    if (containerRef.current && printAreaRef?.current) {
+      dragCacheRef.current = {
+        containerRect: containerRef.current.getBoundingClientRect(),
+        printAreaRect: printAreaRef.current.getBoundingClientRect()
+      };
+    }
+
     // Saugome pradinę poziciją
     dragStartRef.current = {
       x: e.clientX - currentPositionRef.current.x,
@@ -278,7 +300,7 @@ export default function RelativePositionDraggableImage({
       elementRef.current.classList.remove('smooth-transition');
       elementRef.current.style.willChange = 'transform';
     }
-  }, [locked]);
+  }, [locked, containerRef, printAreaRef]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || locked) return;
@@ -293,7 +315,7 @@ export default function RelativePositionDraggableImage({
     }
     
     rafRef.current = requestAnimationFrame(() => {
-      updatePositionFromAbsolute(x, y);
+      updatePositionFromAbsolute(x, y, dragCacheRef.current);
     });
   }, [isDragging, locked, updatePositionFromAbsolute]);
 
@@ -346,6 +368,14 @@ export default function RelativePositionDraggableImage({
     
     setIsDragging(true);
     
+    // Cache dimensions for performance during drag
+    if (containerRef.current && printAreaRef?.current) {
+      dragCacheRef.current = {
+        containerRect: containerRef.current.getBoundingClientRect(),
+        printAreaRect: printAreaRef.current.getBoundingClientRect()
+      };
+    }
+
     const touch = e.touches[0];
     dragStartRef.current = {
       x: touch.clientX - currentPositionRef.current.x,
@@ -357,7 +387,7 @@ export default function RelativePositionDraggableImage({
       elementRef.current.classList.remove('smooth-transition');
       elementRef.current.style.willChange = 'transform';
     }
-  }, [locked]);
+  }, [locked, containerRef, printAreaRef]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isDragging || e.touches.length !== 1 || locked) return;
@@ -372,7 +402,7 @@ export default function RelativePositionDraggableImage({
     }
     
     rafRef.current = requestAnimationFrame(() => {
-      updatePositionFromAbsolute(x, y);
+      updatePositionFromAbsolute(x, y, dragCacheRef.current);
     });
   }, [isDragging, locked, updatePositionFromAbsolute]);
 
