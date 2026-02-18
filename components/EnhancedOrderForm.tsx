@@ -165,11 +165,15 @@ export default function EnhancedOrderForm({
               id="name"
               {...register('name')}
               type="text"
+              aria-invalid={errors.name ? 'true' : 'false'}
+              aria-describedby={errors.name ? 'name-error' : undefined}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              <p id="name-error" role="alert" className="mt-1 text-sm text-red-600">
+                {errors.name.message}
+              </p>
             )}
           </div>
 
@@ -181,11 +185,15 @@ export default function EnhancedOrderForm({
               id="email"
               {...register('email')}
               type="email"
+              aria-invalid={errors.email ? 'true' : 'false'}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p id="email-error" role="alert" className="mt-1 text-sm text-red-600">
+                {errors.email.message}
+              </p>
             )}
           </div>
         </div>
@@ -198,12 +206,16 @@ export default function EnhancedOrderForm({
             id="phone"
             {...register('phone')}
             type="tel"
+            aria-invalid={errors.phone ? 'true' : 'false'}
+            aria-describedby={errors.phone ? 'phone-error' : undefined}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             disabled={isSubmitting || disabled}
             placeholder="+370"
           />
           {errors.phone && (
-            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+            <p id="phone-error" role="alert" className="mt-1 text-sm text-red-600">
+              {errors.phone.message}
+            </p>
           )}
         </div>
       </div>
@@ -219,6 +231,8 @@ export default function EnhancedOrderForm({
             <select
               id="size"
               {...register('size')}
+              aria-invalid={errors.size ? 'true' : 'false'}
+              aria-describedby={errors.size ? 'size-error' : undefined}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
             >
@@ -232,7 +246,9 @@ export default function EnhancedOrderForm({
               <option value="4XL">4XL</option>
             </select>
             {errors.size && (
-              <p className="mt-1 text-sm text-red-600">{errors.size.message}</p>
+              <p id="size-error" role="alert" className="mt-1 text-sm text-red-600">
+                {errors.size.message}
+              </p>
             )}
           </div>
 
@@ -246,11 +262,15 @@ export default function EnhancedOrderForm({
               type="number"
               min="1"
               max="1000"
+              aria-invalid={errors.quantity ? 'true' : 'false'}
+              aria-describedby={errors.quantity ? 'quantity-error' : undefined}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
             />
             {errors.quantity && (
-              <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
+              <p id="quantity-error" role="alert" className="mt-1 text-sm text-red-600">
+                {errors.quantity.message}
+              </p>
             )}
           </div>
         </div>
@@ -267,6 +287,8 @@ export default function EnhancedOrderForm({
                   id={`printArea-${area}`}
                   value={area}
                   disabled={!designPreviews[area] || isSubmitting || disabled}
+                  aria-invalid={!!errors.printAreas}
+                  aria-describedby={errors.printAreas ? 'printAreas-error' : undefined}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   {...register('printAreas')}
                 />
@@ -286,7 +308,9 @@ export default function EnhancedOrderForm({
             ))}
           </div>
           {errors.printAreas && (
-            <p className="mt-1 text-sm text-red-600">{errors.printAreas.message}</p>
+            <p id="printAreas-error" role="alert" className="mt-1 text-sm text-red-600">
+              {errors.printAreas.message}
+            </p>
           )}
           {selectedPrintAreas && selectedPrintAreas.length > 0 && (
             <p className="mt-2 text-xs text-gray-500">
@@ -303,12 +327,16 @@ export default function EnhancedOrderForm({
             id="comments"
             {...register('comments')}
             rows={3}
+            aria-invalid={errors.comments ? 'true' : 'false'}
+            aria-describedby={errors.comments ? 'comments-error' : undefined}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             placeholder="Jei turite papildomų pageidavimų ar klausimų, užrašykite juos čia"
             disabled={isSubmitting || disabled}
           />
           {errors.comments && (
-            <p className="mt-1 text-sm text-red-600">{errors.comments.message}</p>
+            <p id="comments-error" role="alert" className="mt-1 text-sm text-red-600">
+              {errors.comments.message}
+            </p>
           )}
         </div>
 
