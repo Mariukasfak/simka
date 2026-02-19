@@ -93,7 +93,11 @@ export default function EnhancedOrderForm({
 
   if (isSuccess) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+      <div
+        className="bg-green-50 border border-green-200 rounded-lg p-6 text-center"
+        role="status"
+        aria-live="polite"
+      >
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -167,9 +171,12 @@ export default function EnhancedOrderForm({
               type="text"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              aria-required="true"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              <p id="name-error" role="alert" className="mt-1 text-sm text-red-600">{errors.name.message}</p>
             )}
           </div>
 
@@ -183,9 +190,12 @@ export default function EnhancedOrderForm({
               type="email"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              aria-required="true"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p id="email-error" role="alert" className="mt-1 text-sm text-red-600">{errors.email.message}</p>
             )}
           </div>
         </div>
@@ -201,9 +211,11 @@ export default function EnhancedOrderForm({
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             disabled={isSubmitting || disabled}
             placeholder="+370"
+            aria-invalid={!!errors.phone}
+            aria-describedby={errors.phone ? "phone-error" : undefined}
           />
           {errors.phone && (
-            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+            <p id="phone-error" role="alert" className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
           )}
         </div>
       </div>
@@ -221,6 +233,9 @@ export default function EnhancedOrderForm({
               {...register('size')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.size}
+              aria-describedby={errors.size ? "size-error" : undefined}
+              aria-required="true"
             >
               <option value="XS">XS</option>
               <option value="S">S</option>
@@ -232,7 +247,7 @@ export default function EnhancedOrderForm({
               <option value="4XL">4XL</option>
             </select>
             {errors.size && (
-              <p className="mt-1 text-sm text-red-600">{errors.size.message}</p>
+              <p id="size-error" role="alert" className="mt-1 text-sm text-red-600">{errors.size.message}</p>
             )}
           </div>
 
@@ -248,9 +263,12 @@ export default function EnhancedOrderForm({
               max="1000"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.quantity}
+              aria-describedby={errors.quantity ? "quantity-error" : undefined}
+              aria-required="true"
             />
             {errors.quantity && (
-              <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
+              <p id="quantity-error" role="alert" className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
             )}
           </div>
         </div>
@@ -286,7 +304,7 @@ export default function EnhancedOrderForm({
             ))}
           </div>
           {errors.printAreas && (
-            <p className="mt-1 text-sm text-red-600">{errors.printAreas.message}</p>
+            <p role="alert" className="mt-1 text-sm text-red-600">{errors.printAreas.message}</p>
           )}
           {selectedPrintAreas && selectedPrintAreas.length > 0 && (
             <p className="mt-2 text-xs text-gray-500">
@@ -306,9 +324,11 @@ export default function EnhancedOrderForm({
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             placeholder="Jei turite papildomų pageidavimų ar klausimų, užrašykite juos čia"
             disabled={isSubmitting || disabled}
+            aria-invalid={!!errors.comments}
+            aria-describedby={errors.comments ? "comments-error" : undefined}
           />
           {errors.comments && (
-            <p className="mt-1 text-sm text-red-600">{errors.comments.message}</p>
+            <p id="comments-error" role="alert" className="mt-1 text-sm text-red-600">{errors.comments.message}</p>
           )}
         </div>
 
@@ -340,6 +360,7 @@ export default function EnhancedOrderForm({
           variant="default"
           className="flex-1"
           disabled={isSubmitting || disabled || !hasAnyDesign}
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? (
             <span className="flex items-center">
