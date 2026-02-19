@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
@@ -10,7 +11,10 @@ interface ProductSelectorProps {
   onSelect: (product: Product) => void
 }
 
-export default function ProductSelector({
+// ⚡ PERFORMANCE: Memoized to prevent re-renders when parent state changes
+// but product selection remains the same. This is critical as it contains
+// multiple images and motion components.
+export default memo(function ProductSelector({
   products,
   selectedProduct,
   onSelect
@@ -101,4 +105,4 @@ export default function ProductSelector({
       )}
     </div>
   )
-}
+})
