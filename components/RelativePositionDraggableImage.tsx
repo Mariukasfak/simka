@@ -56,6 +56,12 @@ export default function RelativePositionDraggableImage({
   const positionChangeTimeout = useRef<NodeJS.Timeout | null>(null)
   const containerDimensionsRef = useRef<{ width: number, height: number }>({ width: 0, height: 0 })
 
+  // ⚡ PERFORMANCE: Cache rects to avoid reflows during drag
+  const dragCacheRef = useRef<{
+    containerRect: DOMRect | null;
+    printAreaRect: DOMRect | null;
+  }>({ containerRect: null, printAreaRect: null });
+
   // Konteinerio dimensijų atnaujinimas
   const updateContainerDimensions = useCallback(() => {
     if (!containerRef.current) return;
@@ -84,8 +90,15 @@ export default function RelativePositionDraggableImage({
       return { xPercent: 50, yPercent: 50 };
     }
     
-    const container = containerRef.current.getBoundingClientRect();
-    const printArea = printAreaRef.current.getBoundingClientRect();
+    // ⚡ PERFORMANCE: Use cached rects if available (during drag)
+    let container, printArea;
+    if (dragCacheRef.current.containerRect && dragCacheRef.current.printAreaRect) {
+      container = dragCacheRef.current.containerRect;
+      printArea = dragCacheRef.current.printAreaRect;
+    } else {
+      container = containerRef.current.getBoundingClientRect();
+      printArea = printAreaRef.current.getBoundingClientRect();
+    }
     
     // PATOBULINTA: Skaičiuojame santykinę poziciją printArea ribose
     // Ši formulė užtikrina, kad pozicija būtų išreikšta procentais nuo printArea viršutinio kairiojo kampo
@@ -265,6 +278,14 @@ export default function RelativePositionDraggableImage({
     
     e.preventDefault();
     setIsDragging(true);
+
+    // ⚡ PERFORMANCE: Cache dimensions on drag start
+    if (containerRef.current && printAreaRef?.current) {
+      dragCacheRef.current = {
+        containerRect: containerRef.current.getBoundingClientRect(),
+        printAreaRect: printAreaRef.current.getBoundingClientRect()
+      };
+    }
     
     // Saugome pradinę poziciją
     dragStartRef.current = {
@@ -278,7 +299,7 @@ export default function RelativePositionDraggableImage({
       elementRef.current.classList.remove('smooth-transition');
       elementRef.current.style.willChange = 'transform';
     }
-  }, [locked]);
+  }, [locked, containerRef, printAreaRef]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || locked) return;
@@ -302,6 +323,9 @@ export default function RelativePositionDraggableImage({
     
     setIsDragging(false);
     
+    // ⚡ PERFORMANCE: Clear cache
+    dragCacheRef.current = { containerRect: null, printAreaRect: null };
+
     // Valome
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -345,6 +369,14 @@ export default function RelativePositionDraggableImage({
     if (e.touches.length !== 1) return;
     
     setIsDragging(true);
+
+    // ⚡ PERFORMANCE: Cache dimensions on drag start
+    if (containerRef.current && printAreaRef?.current) {
+      dragCacheRef.current = {
+        containerRect: containerRef.current.getBoundingClientRect(),
+        printAreaRect: printAreaRef.current.getBoundingClientRect()
+      };
+    }
     
     const touch = e.touches[0];
     dragStartRef.current = {
@@ -357,7 +389,7 @@ export default function RelativePositionDraggableImage({
       elementRef.current.classList.remove('smooth-transition');
       elementRef.current.style.willChange = 'transform';
     }
-  }, [locked]);
+  }, [locked, containerRef, printAreaRef]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isDragging || e.touches.length !== 1 || locked) return;
@@ -381,6 +413,9 @@ export default function RelativePositionDraggableImage({
     
     setIsDragging(false);
     
+    // ⚡ PERFORMANCE: Clear cache
+    dragCacheRef.current = { containerRect: null, printAreaRect: null };
+
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
     }
