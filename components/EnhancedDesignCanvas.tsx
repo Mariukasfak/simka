@@ -47,13 +47,65 @@ export default function EnhancedDesignCanvas({
   const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
   const isDraggingRef = useRef(false)
 
-  // ⚡ PERFORMANCE: Sync local state with props when NOT dragging
+  // ⚡ PERFORMANCE: Local state for immediate UI feedback on sliders
+  const [localDesignState, setLocalDesignState] = useState({
+    scale: designState.scale,
+    rotation: designState.rotation,
+    opacity: designState.opacity
+  })
+  const lastLocalChangeRef = useRef(0)
+
+  // ⚡ PERFORMANCE: Sync local state with props when NOT dragging or interacting
   useEffect(() => {
     if (!isDraggingRef.current) {
       setDragPosition(designState.position)
       setDragRelativePosition(designState.relativePrintAreaPosition)
     }
-  }, [designState.position, designState.relativePrintAreaPosition])
+
+    // Sync local design state if no recent local interaction (e.g. external reset)
+    // We check timestamp to ensure we don't overwrite active slider usage with stale prop data
+    if (Date.now() - lastLocalChangeRef.current > 200) {
+      setLocalDesignState({
+        scale: designState.scale,
+        rotation: designState.rotation,
+        opacity: designState.opacity
+      })
+    }
+  }, [designState.position, designState.relativePrintAreaPosition, designState.scale, designState.rotation, designState.opacity])
+
+  // ⚡ PERFORMANCE: Debounced update to parent for sliders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedOnDesignChange = useCallback(
+    debounce((changes: Partial<DesignState>) => {
+      onDesignChange(changes)
+    }, 300),
+    [onDesignChange]
+  )
+
+  // Handle local changes (sliders) - updates local state + debounced parent update
+  const handleLocalChange = (changes: Partial<typeof localDesignState>) => {
+    lastLocalChangeRef.current = Date.now()
+    setLocalDesignState(prev => ({ ...prev, ...changes }))
+    debouncedOnDesignChange(changes)
+    setShowInitialTooltip(false)
+  }
+
+  // Handle immediate changes (buttons) - updates local state + immediate parent update with merged state
+  const handleImmediateChange = (changes: Partial<DesignState>) => {
+    lastLocalChangeRef.current = Date.now()
+    setLocalDesignState(prev => {
+      const newState = { ...prev, ...changes }
+      // Send FULL state to ensure parent has latest slider values too
+      onDesignChange({
+        ...changes,
+        scale: newState.scale,
+        rotation: newState.rotation,
+        opacity: newState.opacity
+      })
+      return newState
+    })
+    setShowInitialTooltip(false)
+  }
   
   // Optimizuotas peržiūros generavimas
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -444,18 +496,15 @@ export default function EnhancedDesignCanvas({
               Dydis
             </label>
             <span className="text-sm text-brand-600">
-              {Math.round(designState.scale * 100)}%
+              {Math.round(localDesignState.scale * 100)}%
             </span>
           </div>
           <Slider
-            value={designState.scale}
+            value={localDesignState.scale}
             min={0.2}
             max={3}
             step={0.01}
-            onChange={(value) => {
-              onDesignChange({ scale: value });
-              setShowInitialTooltip(false);
-            }}
+            onChange={(value) => handleLocalChange({ scale: value })}
           />
         </div>
         
@@ -465,18 +514,15 @@ export default function EnhancedDesignCanvas({
               Permatomumas
             </label>
             <span className="text-sm text-brand-600">
-              {Math.round(designState.opacity * 100)}%
+              {Math.round(localDesignState.opacity * 100)}%
             </span>
           </div>
           <Slider
-            value={designState.opacity}
+            value={localDesignState.opacity}
             min={0.1}
             max={1}
             step={0.01}
-            onChange={(value) => {
-              onDesignChange({ opacity: value });
-              setShowInitialTooltip(false);
-            }}
+            onChange={(value) => handleLocalChange({ opacity: value })}
           />
         </div>
       </div>
@@ -500,10 +546,7 @@ export default function EnhancedDesignCanvas({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            onDesignChange({ rotation: designState.rotation - 15 });
-            setShowInitialTooltip(false);
-          }}
+          onClick={() => handleImmediateChange({ rotation: localDesignState.rotation - 15 })}
           icon={RotateCcw}
         >
           -15°
@@ -511,10 +554,7 @@ export default function EnhancedDesignCanvas({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            onDesignChange({ rotation: designState.rotation + 15 });
-            setShowInitialTooltip(false);
-          }}
+          onClick={() => handleImmediateChange({ rotation: localDesignState.rotation + 15 })}
           icon={RotateCw}
         >
           +15°
@@ -523,8 +563,7 @@ export default function EnhancedDesignCanvas({
           variant="outline"
           size="sm"
           onClick={() => {
-            onDesignChange({ locked: !designState.locked });
-            setShowInitialTooltip(false);
+            handleImmediateChange({ locked: !designState.locked });
             // Peržiūrą generuojame, kad atsinaujintų ir užrakto indikatoriaus vaizdas
             generatePreview();
           }}
@@ -581,9 +620,9 @@ export default function EnhancedDesignCanvas({
               imageUrl={uploadedImage}
               position={dragPosition} // ⚡ Using local state
               relativePosition={dragRelativePosition} // ⚡ Using local state
-              scale={designState.scale}
-              opacity={designState.opacity}
-              rotation={designState.rotation}
+              scale={localDesignState.scale} // ⚡ Using local state
+              opacity={localDesignState.opacity} // ⚡ Using local state
+              rotation={localDesignState.rotation} // ⚡ Using local state
               onPositionChange={handlePositionChange}
               onRelativePositionChange={handleRelativePositionChange}
               onPositionChangeEnd={handlePositionChangeEnd}
@@ -621,7 +660,7 @@ export default function EnhancedDesignCanvas({
       <div className="flex justify-between text-sm text-gray-500">
         <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
         <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
-        <span>Pasukimas: {Math.round(designState.rotation)}°</span>
+        <span>Pasukimas: {Math.round(localDesignState.rotation)}°</span>
       </div>
       
       {/* Derinimo informacija apie santykinę poziciją - rodoma tik kūrimo aplinkoje */}
