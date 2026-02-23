@@ -93,9 +93,13 @@ export default function EnhancedOrderForm({
 
   if (isSuccess) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+      <div
+        className="bg-green-50 border border-green-200 rounded-lg p-6 text-center"
+        role="alert"
+        aria-live="polite"
+      >
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -167,9 +171,12 @@ export default function EnhancedOrderForm({
               type="text"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
+              aria-required="true"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              <p id="name-error" role="alert" className="mt-1 text-sm text-red-600">{errors.name.message}</p>
             )}
           </div>
 
@@ -183,9 +190,12 @@ export default function EnhancedOrderForm({
               type="email"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
+              aria-required="true"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p id="email-error" role="alert" className="mt-1 text-sm text-red-600">{errors.email.message}</p>
             )}
           </div>
         </div>
@@ -201,9 +211,11 @@ export default function EnhancedOrderForm({
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             disabled={isSubmitting || disabled}
             placeholder="+370"
+            aria-invalid={!!errors.phone}
+            aria-describedby={errors.phone ? "phone-error" : undefined}
           />
           {errors.phone && (
-            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+            <p id="phone-error" role="alert" className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
           )}
         </div>
       </div>
@@ -221,6 +233,9 @@ export default function EnhancedOrderForm({
               {...register('size')}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.size}
+              aria-describedby={errors.size ? "size-error" : undefined}
+              aria-required="true"
             >
               <option value="XS">XS</option>
               <option value="S">S</option>
@@ -232,7 +247,7 @@ export default function EnhancedOrderForm({
               <option value="4XL">4XL</option>
             </select>
             {errors.size && (
-              <p className="mt-1 text-sm text-red-600">{errors.size.message}</p>
+              <p id="size-error" role="alert" className="mt-1 text-sm text-red-600">{errors.size.message}</p>
             )}
           </div>
 
@@ -248,17 +263,20 @@ export default function EnhancedOrderForm({
               max="1000"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               disabled={isSubmitting || disabled}
+              aria-invalid={!!errors.quantity}
+              aria-describedby={errors.quantity ? "quantity-error" : undefined}
+              aria-required="true"
             />
             {errors.quantity && (
-              <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
+              <p id="quantity-error" role="alert" className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>
             )}
           </div>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <fieldset>
+          <legend className="block text-sm font-medium text-gray-700 mb-2">
             Spausdinimo vietos <span className="text-red-500">*</span>
-          </label>
+          </legend>
           <div className="grid grid-cols-2 gap-2">
             {printAreas.map((area) => (
               <div key={area} className="flex items-center gap-2">
@@ -269,6 +287,8 @@ export default function EnhancedOrderForm({
                   disabled={!designPreviews[area] || isSubmitting || disabled}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   {...register('printAreas')}
+                  aria-invalid={!!errors.printAreas}
+                  aria-describedby={errors.printAreas ? "printAreas-error" : undefined}
                 />
                 <label htmlFor={`printArea-${area}`} className="text-sm text-gray-700">
                   {printAreaLabels[area]}
@@ -278,6 +298,7 @@ export default function EnhancedOrderForm({
                     type="button"
                     className="ml-auto text-xs text-indigo-600 hover:text-indigo-800"
                     onClick={() => showPreviewForArea(area)}
+                    aria-label={`Peržiūrėti ${printAreaLabels[area]}`}
                   >
                     Peržiūrėti
                   </button>
@@ -286,14 +307,14 @@ export default function EnhancedOrderForm({
             ))}
           </div>
           {errors.printAreas && (
-            <p className="mt-1 text-sm text-red-600">{errors.printAreas.message}</p>
+            <p id="printAreas-error" role="alert" className="mt-1 text-sm text-red-600">{errors.printAreas.message}</p>
           )}
           {selectedPrintAreas && selectedPrintAreas.length > 0 && (
             <p className="mt-2 text-xs text-gray-500">
               Pasirinktos spausdinimo vietos: {selectedPrintAreas.map(area => printAreaLabels[area as PrintAreaPosition]).join(', ')}
             </p>
           )}
-        </div>
+        </fieldset>
 
         <div>
           <label htmlFor="comments" className="block text-sm font-medium text-gray-700">
@@ -340,10 +361,11 @@ export default function EnhancedOrderForm({
           variant="default"
           className="flex-1"
           disabled={isSubmitting || disabled || !hasAnyDesign}
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? (
             <span className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
