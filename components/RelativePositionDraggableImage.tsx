@@ -1,7 +1,8 @@
 // filepath: /workspaces/simka/components/RelativePositionDraggableImage.tsx
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { debounce } from 'lodash'
 import type { DesignPosition } from '@/lib/types'
 
 interface RelativePositionDraggableImageProps {
@@ -414,14 +415,9 @@ export default function RelativePositionDraggableImage({
     }, 50);
   }, [isDragging, onPositionChange, onPositionChangeEnd, onRelativePositionChange, onRelativePositionChangeEnd]);
 
-  // Patikrinkime ribas ir atnaujiname jas, kai pasikeičia elementai
-  useEffect(() => {
-    // Atnaujiname konteinerio dimensijas ir ribas
-    updateContainerDimensions();
-    updateBounds();
-    
-    // Pridedame įvykio klausymą lango dydžio pakeitimui
-    window.addEventListener('resize', () => {
+  // ⚡ PERFORMANCE: Debounced resize handler to prevent excessive updates
+  const handleResize = useMemo(
+    () => debounce(() => {
       updateContainerDimensions();
       updateBounds();
       
@@ -430,12 +426,24 @@ export default function RelativePositionDraggableImage({
         const absPos = relativeToAbsolutePosition(currentRelativePositionRef.current);
         updateElementPosition(absPos, currentRelativePositionRef.current);
       }
-    });
+    }, 100),
+    [updateContainerDimensions, updateBounds, relativeToAbsolutePosition, updateElementPosition]
+  );
+
+  // Patikrinkime ribas ir atnaujiname jas, kai pasikeičia elementai
+  useEffect(() => {
+    // Atnaujiname konteinerio dimensijas ir ribas
+    updateContainerDimensions();
+    updateBounds();
+
+    // Pridedame įvykio klausymą lango dydžio pakeitimui
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      window.removeEventListener('resize', updateBounds);
+      window.removeEventListener('resize', handleResize);
+      handleResize.cancel();
     };
-  }, [updateBounds, updateContainerDimensions, relativeToAbsolutePosition, updateElementPosition]);
+  }, [handleResize, updateBounds, updateContainerDimensions]);
   
   // Sekame vaizdo pasikeitimus - kai pakeičiamas vaizdas, atnaujinkime poziciją
   useEffect(() => {
