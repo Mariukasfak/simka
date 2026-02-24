@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { AnalyticsData, Order } from '@/lib/types'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { AnalyticsData, Order } from "@/lib/types";
 import {
   LineChart,
   Line,
@@ -13,64 +13,67 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
-} from 'recharts'
-import { format } from 'date-fns'
-import toast from 'react-hot-toast'
+  ResponsiveContainer,
+} from "recharts";
+import { format } from "date-fns";
+import toast from "react-hot-toast";
 
 export default function AdminDashboard() {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error || !session) {
-        router.push('/login')
-        return
+        router.push("/login");
+        return;
       }
 
       // Check if user is admin
       const { data: user } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-      if (!user || user.role !== 'admin') {
-        router.push('/')
-        toast.error('Unauthorized access')
-        return
+      if (!user || user.role !== "admin") {
+        router.push("/");
+        toast.error("Unauthorized access");
+        return;
       }
 
-      fetchAnalytics()
-    }
+      fetchAnalytics();
+    };
 
-    checkAuth()
-  }, [router, supabase])
+    checkAuth();
+  }, [router, supabase]);
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('/api/admin/analytics')
-      const data = await response.json()
-      setAnalytics(data)
+      const response = await fetch("/api/admin/analytics");
+      const data = await response.json();
+      setAnalytics(data);
     } catch (error) {
-      console.error('Error fetching analytics:', error)
-      toast.error('Failed to load analytics data')
+      console.error("Error fetching analytics:", error);
+      toast.error("Failed to load analytics data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
       </div>
-    )
+    );
   }
 
   if (!analytics) {
@@ -78,7 +81,7 @@ export default function AdminDashboard() {
       <div className="text-center py-12">
         <p className="text-gray-500">Failed to load analytics data</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -89,7 +92,9 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Total Orders</h3>
-          <p className="text-3xl font-bold text-indigo-600">{analytics.totalOrders}</p>
+          <p className="text-3xl font-bold text-indigo-600">
+            {analytics.totalOrders}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Total Revenue</h3>
@@ -98,7 +103,9 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Avg. Order Value</h3>
+          <h3 className="text-lg font-medium text-gray-900">
+            Avg. Order Value
+          </h3>
           <p className="text-3xl font-bold text-indigo-600">
             €{analytics.averageOrderValue.toFixed(2)}
           </p>
@@ -112,19 +119,19 @@ export default function AdminDashboard() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={analytics.dailyRevenue}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(date) => format(new Date(date), 'MMM d')}
+              <XAxis
+                dataKey="date"
+                tickFormatter={(date) => format(new Date(date), "MMM d")}
               />
               <YAxis />
-              <Tooltip 
+              <Tooltip
                 formatter={(value) => `€${Number(value).toFixed(2)}`}
-                labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
+                labelFormatter={(date) => format(new Date(date), "MMM d, yyyy")}
               />
-              <Line 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#4F46E5" 
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#4F46E5"
                 strokeWidth={2}
               />
             </LineChart>
@@ -168,12 +175,17 @@ export default function AdminDashboard() {
                     {order.customerName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        order.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : order.status === "processing"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : order.status === "shipped"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </td>
@@ -181,7 +193,7 @@ export default function AdminDashboard() {
                     €{order.totalPrice.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {format(new Date(order.createdAt), 'MMM d, yyyy')}
+                    {format(new Date(order.createdAt), "MMM d, yyyy")}
                   </td>
                 </tr>
               ))}
@@ -190,5 +202,5 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
