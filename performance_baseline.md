@@ -1,6 +1,7 @@
 # Performance Baseline: Image Loading Optimization
 
 ## Current State
+
 - **File:** `components/ProductSelector.tsx`
 - **Implementation:** Standard HTML `<img>` tag.
 - **Issues:**
@@ -10,6 +11,7 @@
   - **Potential Layout Shift:** Without specified dimensions or a robust container, `<img>` tags can cause Cumulative Layout Shift (CLS).
 
 ## Optimization Strategy
+
 - **Action:** Replace `<img>` with Next.js `<Image>` component.
 - **Rationale:**
   - **Automatic Lazy Loading:** Reduces initial page load time and saves bandwidth by only loading images when they are about to enter the viewport.
@@ -18,6 +20,7 @@
   - **Visual Stability:** Helps maintain visual stability and improve CLS scores.
 
 ## Expected Impact
+
 - Improved **Largest Contentful Paint (LCP)**.
 - Improved **Cumulative Layout Shift (CLS)**.
 - Reduced **Total Page Weight** due to optimized image sizes and formats.
