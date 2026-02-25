@@ -1,7 +1,7 @@
 // filepath: /workspaces/simka/components/RelativePositionDraggableImage.tsx
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react'
 import type { DesignPosition } from '@/lib/types'
 
 interface RelativePositionDraggableImageProps {
@@ -577,6 +577,14 @@ export default function RelativePositionDraggableImage({
       }
     };
   }, []);
+
+  // ⚡ PERFORMANCE: Restore dragged position if parent re-renders with stale props
+  useLayoutEffect(() => {
+    if (isDragging && elementRef.current) {
+      const { x, y } = currentPositionRef.current;
+      elementRef.current.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${scale}) rotate(${rotation}deg)`;
+    }
+  });
 
   return (
     <div

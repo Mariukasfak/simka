@@ -42,6 +42,12 @@ export default function EnhancedDesignCanvas({
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
   const skipStateUpdateRef = useRef(false)
 
+  // ⚡ PERFORMANCE: Refs for coordinate display to avoid re-renders during drag
+  const xCoordRef = useRef<HTMLSpanElement>(null)
+  const yCoordRef = useRef<HTMLSpanElement>(null)
+  const relXRef = useRef<HTMLSpanElement>(null)
+  const relYRef = useRef<HTMLSpanElement>(null)
+
   // ⚡ PERFORMANCE: Local state for smooth dragging without re-rendering parent
   const [dragPosition, setDragPosition] = useState(designState.position)
   const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
@@ -239,7 +245,7 @@ export default function EnhancedDesignCanvas({
     }
   }, [canvasRef, printAreaRef, uploadedImage, currentView, designState, onPreviewGenerated]);
 
-  // ⚡ PERFORMANCE: Update only local state during drag
+  // ⚡ PERFORMANCE: Update DOM directly during drag to avoid expensive re-renders
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
     if (skipStateUpdateRef.current) {
       skipStateUpdateRef.current = false;
@@ -253,10 +259,15 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
 
-    setDragPosition(newPosition);
+    // Direct DOM update avoids re-renders
+    if (xCoordRef.current) xCoordRef.current.innerText = `X: ${Math.round(newPosition.x)}`;
+    if (yCoordRef.current) yCoordRef.current.innerText = `Y: ${Math.round(newPosition.y)}`;
+
+    // NOTE: We do NOT update dragPosition state here to prevent re-renders
+    // The visual position update is handled by the child component directly
   }, [showInitialTooltip]);
 
-  // ⚡ PERFORMANCE: Update only local state during drag
+  // ⚡ PERFORMANCE: Update DOM directly during drag to avoid expensive re-renders
   const handleRelativePositionChange = useCallback((relPosition: { xPercent: number, yPercent: number }) => {
     if (skipStateUpdateRef.current) {
       skipStateUpdateRef.current = false;
@@ -270,7 +281,11 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
     
-    setDragRelativePosition(relPosition);
+    // Direct DOM update avoids re-renders
+    if (relXRef.current) relXRef.current.innerText = `RelX: ${Math.round(relPosition.xPercent)}%`;
+    if (relYRef.current) relYRef.current.innerText = `RelY: ${Math.round(relPosition.yPercent)}%`;
+
+    // NOTE: We do NOT update state here to prevent re-renders
   }, [showInitialTooltip]);
 
   // ⚡ PERFORMANCE: Update parent state only on drag end
@@ -619,8 +634,8 @@ export default function EnhancedDesignCanvas({
       </div>
 
       <div className="flex justify-between text-sm text-gray-500">
-        <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
-        <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
+        <span ref={xCoordRef}>X: {Math.round(dragPosition.x)}</span> {/* ⚡ DOM updates via ref */}
+        <span ref={yCoordRef}>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ DOM updates via ref */}
         <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
@@ -628,8 +643,8 @@ export default function EnhancedDesignCanvas({
       {process.env.NODE_ENV === 'development' && dragRelativePosition && ( /* ⚡ Using local state */
         <div className="mt-2 p-2 bg-gray-100 text-xs text-gray-700 rounded">
           <div className="flex justify-between">
-            <span>RelX: {Math.round(dragRelativePosition.xPercent)}%</span>
-            <span>RelY: {Math.round(dragRelativePosition.yPercent)}%</span>
+            <span ref={relXRef}>RelX: {Math.round(dragRelativePosition.xPercent)}%</span>
+            <span ref={relYRef}>RelY: {Math.round(dragRelativePosition.yPercent)}%</span>
             <span>{designState.locked ? '🔒 Užrakinta' : '🔓 Atrakinta'}</span>
           </div>
         </div>
