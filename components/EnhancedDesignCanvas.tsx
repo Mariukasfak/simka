@@ -42,6 +42,10 @@ export default function EnhancedDesignCanvas({
   const lastViewRef = useRef<PrintAreaPosition>(currentView)
   const skipStateUpdateRef = useRef(false)
 
+  // ⚡ PERFORMANCE: Direct DOM updates for coordinates to avoid re-renders
+  const xCoordRef = useRef<HTMLSpanElement>(null)
+  const yCoordRef = useRef<HTMLSpanElement>(null)
+
   // ⚡ PERFORMANCE: Local state for smooth dragging without re-rendering parent
   const [dragPosition, setDragPosition] = useState(designState.position)
   const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
@@ -239,7 +243,7 @@ export default function EnhancedDesignCanvas({
     }
   }, [canvasRef, printAreaRef, uploadedImage, currentView, designState, onPreviewGenerated]);
 
-  // ⚡ PERFORMANCE: Update only local state during drag
+  // ⚡ PERFORMANCE: Update only refs during drag to avoid re-renders
   const handlePositionChange = useCallback((newPosition: { x: number, y: number }) => {
     if (skipStateUpdateRef.current) {
       skipStateUpdateRef.current = false;
@@ -253,7 +257,9 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
 
-    setDragPosition(newPosition);
+    // Direct DOM update instead of state update to avoid re-render
+    if (xCoordRef.current) xCoordRef.current.innerText = Math.round(newPosition.x).toString();
+    if (yCoordRef.current) yCoordRef.current.innerText = Math.round(newPosition.y).toString();
   }, [showInitialTooltip]);
 
   // ⚡ PERFORMANCE: Update only local state during drag
@@ -270,7 +276,9 @@ export default function EnhancedDesignCanvas({
       setShowInitialTooltip(false);
     }
     
-    setDragRelativePosition(relPosition);
+    // We don't update state here to avoid re-renders.
+    // RelativePositionDraggableImage handles its own updates during drag.
+    // Debug info won't update live, but performance is prioritized.
   }, [showInitialTooltip]);
 
   // ⚡ PERFORMANCE: Update parent state only on drag end
@@ -619,8 +627,8 @@ export default function EnhancedDesignCanvas({
       </div>
 
       <div className="flex justify-between text-sm text-gray-500">
-        <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
-        <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
+        <span className="flex gap-1">X: <span ref={xCoordRef}>{Math.round(dragPosition.x)}</span></span>
+        <span className="flex gap-1">Y: <span ref={yCoordRef}>{Math.round(dragPosition.y)}</span></span>
         <span>Pasukimas: {Math.round(designState.rotation)}°</span>
       </div>
       
