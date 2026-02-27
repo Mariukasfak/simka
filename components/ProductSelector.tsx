@@ -21,12 +21,17 @@ export default function ProductSelector({
         Pasirinkite produktą
       </h2>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div
+        className="grid grid-cols-2 gap-4"
+        role="group"
+        aria-label="Produktų pasirinkimas"
+      >
         {products.map((product) => (
           <motion.button
             key={product.id}
             onClick={() => onSelect(product)}
-            className={`relative p-4 rounded-lg border-2 transition-colors ${
+            aria-pressed={selectedProduct.id === product.id}
+            className={`relative p-4 rounded-lg border-2 transition-colors focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:outline-none ${
               selectedProduct.id === product.id
                 ? 'border-accent-500 bg-accent-50'
                 : 'border-gray-200 hover:border-gray-300'
