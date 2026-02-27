@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 
 // Eksportuojame WizardStep tipą, kuris naudojamas esamame projekte
 export type WizardStep = 'product' | 'upload' | 'design' | 'order'
@@ -13,7 +13,7 @@ interface DesignWizardProps {
   designPreviews: Record<string, string | null>
 }
 
-export default function DesignWizard({
+function DesignWizard({
   currentStep,
   setCurrentStep,
   hasUploadedImage,
@@ -109,3 +109,6 @@ export default function DesignWizard({
     </div>
   )
 }
+
+// ⚡ PERFORMANCE: Memoized to prevent re-renders when parent state updates (like dragging)
+export default memo(DesignWizard)
