@@ -600,6 +600,7 @@ export default function EnhancedDesignCanvas({
                 <button 
                   onClick={() => setShowInitialTooltip(false)}
                   className="absolute top-1 right-1 text-accent-500 hover:text-accent-700"
+                  aria-label="Uždaryti patarimą"
                 >
                   <X size={16} />
                 </button>
@@ -717,6 +718,7 @@ export default function EnhancedDesignCanvas({
               <button 
                 onClick={() => setShowHelp(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Uždaryti pagalbą"
               >
                 <X size={20} />
               </button>
