@@ -21,11 +21,16 @@ export default function ProductSelector({
         Pasirinkite produktą
       </h2>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div
+        className="grid grid-cols-2 gap-4"
+        role="group"
+        aria-label="Produkto pasirinkimas"
+      >
         {products.map((product) => (
           <motion.button
             key={product.id}
             onClick={() => onSelect(product)}
+            aria-pressed={selectedProduct.id === product.id}
             className={`relative p-4 rounded-lg border-2 transition-colors ${
               selectedProduct.id === product.id
                 ? 'border-accent-500 bg-accent-50'
