@@ -13,7 +13,9 @@ interface DesignWizardProps {
   designPreviews: Record<string, string | null>
 }
 
-export default function DesignWizard({
+// ⚡ Bolt Optimization: Wrapped in React.memo to prevent unnecessary re-renders
+// when parent component (Home) state changes (e.g., slider adjustments in design tool)
+const DesignWizard = React.memo(function DesignWizard({
   currentStep,
   setCurrentStep,
   hasUploadedImage,
@@ -108,4 +110,6 @@ export default function DesignWizard({
       </div>
     </div>
   )
-}
+});
+
+export default DesignWizard;
