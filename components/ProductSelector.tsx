@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
@@ -10,7 +11,9 @@ interface ProductSelectorProps {
   onSelect: (product: Product) => void
 }
 
-export default function ProductSelector({
+// ⚡ BOLT OPTIMIZATION: Wrapped in React.memo to prevent unnecessary re-renders.
+// Parent component passes stable memoized products array and onSelect callback.
+export default React.memo(function ProductSelector({
   products,
   selectedProduct,
   onSelect
@@ -101,4 +104,4 @@ export default function ProductSelector({
       )}
     </div>
   )
-}
+})
