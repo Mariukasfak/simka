@@ -269,6 +269,7 @@ export default function MultiDesignCanvas({
               min={0.2}
               max={3}
               step={0.01}
+              aria-label="Dydžio keitimas"
               onChange={(value) => onUpdateDesign(activeDesignId, { scale: value })}
             />
           </div>
@@ -280,6 +281,7 @@ export default function MultiDesignCanvas({
               min={0.1}
               max={1}
               step={0.01}
+              aria-label="Permatomumo keitimas"
               onChange={(value) => onUpdateDesign(activeDesignId, { opacity: value })}
             />
           </div>

@@ -229,6 +229,7 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
                 min={-1}
                 max={1}
                 step={0.1}
+                aria-label="Šviesumo keitimas"
                 onChange={setBrightness}
               />
             </div>
@@ -240,6 +241,7 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
                 min={-1}
                 max={1}
                 step={0.1}
+                aria-label="Kontrasto keitimas"
                 onChange={setContrast}
               />
             </div>
