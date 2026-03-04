@@ -13,7 +13,10 @@ interface DesignWizardProps {
   designPreviews: Record<string, string | null>
 }
 
-export default function DesignWizard({
+// ⚡ BOLT OPTIMIZATION: Wrapped in React.memo to prevent irrelevant re-renders
+// triggered by frequent state updates (like slider adjustments) in parent component.
+// Props passed here are stable (strings, booleans, stable objects).
+export default React.memo(function DesignWizard({
   currentStep,
   setCurrentStep,
   hasUploadedImage,
@@ -108,4 +111,4 @@ export default function DesignWizard({
       </div>
     </div>
   )
-}
+})
