@@ -38,6 +38,7 @@ export default function Controls({
           min={0.2}
           max={2}
           step={0.01}
+          aria-label="Dydžio keitimas"
           onChange={onScaleChange}
         />
       </div>
@@ -56,6 +57,7 @@ export default function Controls({
           min={0.1}
           max={1}
           step={0.01}
+          aria-label="Permatomumo keitimas"
           onChange={onOpacityChange}
         />
       </div>

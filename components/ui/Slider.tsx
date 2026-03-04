@@ -9,6 +9,7 @@ interface SliderProps {
   step?: number
   onChange: (value: number) => void
   className?: string
+  'aria-label'?: string
 }
 
 export function Slider({
@@ -18,11 +19,13 @@ export function Slider({
   step = 0.01,
   onChange,
   className = '',
+  'aria-label': ariaLabel,
 }: SliderProps) {
   return (
     <div className={`w-full ${className}`}>
       <input
         type="range"
+        aria-label={ariaLabel}
         min={min}
         max={max}
         step={step}

@@ -452,6 +452,7 @@ export default function EnhancedDesignCanvas({
             min={0.2}
             max={3}
             step={0.01}
+            aria-label="Dydžio keitimas"
             onChange={(value) => {
               onDesignChange({ scale: value });
               setShowInitialTooltip(false);
@@ -473,6 +474,7 @@ export default function EnhancedDesignCanvas({
             min={0.1}
             max={1}
             step={0.01}
+            aria-label="Permatomumo keitimas"
             onChange={(value) => {
               onDesignChange({ opacity: value });
               setShowInitialTooltip(false);
