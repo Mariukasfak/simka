@@ -1,0 +1,3 @@
+## 2024-05-24 - Add ARIA Labels to Icon-Only Action Buttons
+**Learning:** Icon-only buttons (like `lucide-react`'s `<X />` for closing tooltips/modals) present a significant accessibility issue for screen readers because they lack visible text to read. In a localized application (e.g., Lithuanian interface), the `aria-label` attribute must also be localized to match the language context (e.g., using `aria-label="Uždaryti patarimą"` instead of "Close tooltip").
+**Action:** When adding icon-only buttons for actions like dismissing modals or tooltips, always provide a translated `aria-label` and ensure keyboard navigability using `focus-visible` styles to show focus states cleanly.

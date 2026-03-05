@@ -599,7 +599,8 @@ export default function EnhancedDesignCanvas({
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-accent-100 text-accent-800 p-3 rounded-lg shadow-lg border border-accent-200 max-w-xs text-center z-30">
                 <button 
                   onClick={() => setShowInitialTooltip(false)}
-                  className="absolute top-1 right-1 text-accent-500 hover:text-accent-700"
+                  aria-label="Uždaryti patarimą"
+                  className="absolute top-1 right-1 text-accent-500 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm outline-none"
                 >
                   <X size={16} />
                 </button>
@@ -716,7 +717,8 @@ export default function EnhancedDesignCanvas({
               <h3 className="text-lg font-bold">Kaip naudotis dizaino įrankiu</h3>
               <button 
                 onClick={() => setShowHelp(false)}
-                className="text-gray-500 hover:text-gray-700"
+                aria-label="Uždaryti pagalbą"
+                className="text-gray-500 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-accent-500 rounded-sm outline-none"
               >
                 <X size={20} />
               </button>
