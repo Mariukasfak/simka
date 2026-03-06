@@ -1,3 +1,7 @@
 ## 2024-05-23 - [Prevented Parent Re-renders on Drag]
 **Learning:** React components re-rendering on every mouse move (even if throttled) can be a significant performance bottleneck, especially if the parent component is complex.
 **Action:** Use local state for high-frequency updates (like dragging) and only sync with the parent state on completion (drag end). This isolates the re-renders to the leaf component.
+
+## 2025-02-17 - [Optimized Pixel Iteration in Image Processing]
+**Learning:** Processing images pixel-by-pixel in JavaScript using HTMLCanvasElement involves tight loops traversing large arrays (e.g., `ImageData.data`). Performing conditional checks (`if (filter.contrast)`), property lookups, and calculating constants inside this loop causes severe performance degradation, especially for high-resolution images.
+**Action:** When implementing custom image filters, always pre-calculate mathematical constants outside the pixel loop. Evaluate conditions early to either skip the loop entirely or establish flags (like `hasContrast`) that avoid repeated object access within the loop. Finally, use local variables to store individual channel values (`r`, `g`, `b`) to minimize repeated array indexing overhead during modifications.
