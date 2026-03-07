@@ -47,13 +47,64 @@ export default function EnhancedDesignCanvas({
   const [dragRelativePosition, setDragRelativePosition] = useState(designState.relativePrintAreaPosition)
   const isDraggingRef = useRef(false)
 
-  // ⚡ PERFORMANCE: Sync local state with props when NOT dragging
+  // ⚡ PERFORMANCE: Local state for high-frequency inputs (sliders)
+  const [localDesignState, setLocalDesignState] = useState({
+    scale: designState.scale,
+    opacity: designState.opacity,
+    rotation: designState.rotation
+  })
+  const lastLocalChangeRef = useRef<number>(0)
+
+  // ⚡ PERFORMANCE: Sync local state with props when NOT dragging and no recent slider updates
   useEffect(() => {
     if (!isDraggingRef.current) {
       setDragPosition(designState.position)
       setDragRelativePosition(designState.relativePrintAreaPosition)
     }
-  }, [designState.position, designState.relativePrintAreaPosition])
+
+    // Only sync from props if there haven't been recent local changes
+    // This prevents the sliders from jumping back to previous values.
+    // If external changes occur (like parent resets or view changes),
+    // we want those to override local state.
+    const now = Date.now()
+    if (now - lastLocalChangeRef.current > 500) {
+      setLocalDesignState({
+        scale: designState.scale,
+        opacity: designState.opacity,
+        rotation: designState.rotation
+      })
+    }
+  }, [designState.position, designState.relativePrintAreaPosition, designState.scale, designState.opacity, designState.rotation])
+
+  // ⚡ PERFORMANCE: Debounced parent state update for sliders
+  // We use a ref to store the debounced function so it doesn't get recreated on every render
+  const debouncedOnDesignChangeRef = useRef(
+    debounce((changes: Partial<DesignState>, onChange: typeof onDesignChange, generate: typeof generatePreview) => {
+      onChange(changes)
+      generate()
+    }, 100)
+  )
+
+  // Clean up the debounced function on unmount
+  useEffect(() => {
+    const debouncedFn = debouncedOnDesignChangeRef.current
+    return () => {
+      debouncedFn.cancel()
+    }
+  }, [])
+
+  // Wrapper for immediate local update + debounced parent update
+  const handleLocalDesignChange = useCallback((changes: Partial<typeof localDesignState>) => {
+    lastLocalChangeRef.current = Date.now()
+    setLocalDesignState(prev => ({ ...prev, ...changes }))
+
+    // Call the stable debounced function, passing the current dependencies
+    debouncedOnDesignChangeRef.current(changes, onDesignChange, generatePreview)
+
+    if (showInitialTooltip) {
+      setShowInitialTooltip(false)
+    }
+  }, [onDesignChange, generatePreview, showInitialTooltip])
   
   // Optimizuotas peržiūros generavimas
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -444,18 +495,15 @@ export default function EnhancedDesignCanvas({
               Dydis
             </label>
             <span className="text-sm text-brand-600">
-              {Math.round(designState.scale * 100)}%
+              {Math.round(localDesignState.scale * 100)}%
             </span>
           </div>
           <Slider
-            value={designState.scale}
+            value={localDesignState.scale}
             min={0.2}
             max={3}
             step={0.01}
-            onChange={(value) => {
-              onDesignChange({ scale: value });
-              setShowInitialTooltip(false);
-            }}
+            onChange={(value) => handleLocalDesignChange({ scale: value })}
           />
         </div>
         
@@ -465,18 +513,15 @@ export default function EnhancedDesignCanvas({
               Permatomumas
             </label>
             <span className="text-sm text-brand-600">
-              {Math.round(designState.opacity * 100)}%
+              {Math.round(localDesignState.opacity * 100)}%
             </span>
           </div>
           <Slider
-            value={designState.opacity}
+            value={localDesignState.opacity}
             min={0.1}
             max={1}
             step={0.01}
-            onChange={(value) => {
-              onDesignChange({ opacity: value });
-              setShowInitialTooltip(false);
-            }}
+            onChange={(value) => handleLocalDesignChange({ opacity: value })}
           />
         </div>
       </div>
@@ -500,10 +545,7 @@ export default function EnhancedDesignCanvas({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            onDesignChange({ rotation: designState.rotation - 15 });
-            setShowInitialTooltip(false);
-          }}
+          onClick={() => handleLocalDesignChange({ rotation: localDesignState.rotation - 15 })}
           icon={RotateCcw}
         >
           -15°
@@ -511,10 +553,7 @@ export default function EnhancedDesignCanvas({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => {
-            onDesignChange({ rotation: designState.rotation + 15 });
-            setShowInitialTooltip(false);
-          }}
+          onClick={() => handleLocalDesignChange({ rotation: localDesignState.rotation + 15 })}
           icon={RotateCw}
         >
           +15°
@@ -581,9 +620,9 @@ export default function EnhancedDesignCanvas({
               imageUrl={uploadedImage}
               position={dragPosition} // ⚡ Using local state
               relativePosition={dragRelativePosition} // ⚡ Using local state
-              scale={designState.scale}
-              opacity={designState.opacity}
-              rotation={designState.rotation}
+              scale={localDesignState.scale}
+              opacity={localDesignState.opacity}
+              rotation={localDesignState.rotation}
               onPositionChange={handlePositionChange}
               onRelativePositionChange={handleRelativePositionChange}
               onPositionChangeEnd={handlePositionChangeEnd}
@@ -621,7 +660,7 @@ export default function EnhancedDesignCanvas({
       <div className="flex justify-between text-sm text-gray-500">
         <span>X: {Math.round(dragPosition.x)}</span> {/* ⚡ Using local state */}
         <span>Y: {Math.round(dragPosition.y)}</span> {/* ⚡ Using local state */}
-        <span>Pasukimas: {Math.round(designState.rotation)}°</span>
+        <span>Pasukimas: {Math.round(localDesignState.rotation)}°</span>
       </div>
       
       {/* Derinimo informacija apie santykinę poziciją - rodoma tik kūrimo aplinkoje */}
