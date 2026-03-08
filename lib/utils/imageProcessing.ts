@@ -90,29 +90,53 @@ export function applyImageFilter(
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imageData.data
 
+  const hasBrightness = filter.brightness !== undefined && filter.brightness !== 1
+  const brightness = filter.brightness || 1
+
+  const hasContrast = filter.contrast !== undefined && filter.contrast !== 0
+  const contrastFactor = hasContrast
+    ? (259 * (filter.contrast! + 255)) / (255 * (259 - filter.contrast!))
+    : 1
+
+  const hasSaturation = filter.saturation !== undefined && filter.saturation !== 1
+  const sat = filter.saturation || 1
+  const invSat = 1 - sat
+
+  // Skip if no filters to apply
+  if (!hasBrightness && !hasContrast && !hasSaturation) return
+
   for (let i = 0; i < data.length; i += 4) {
+    // Read once
+    let r = data[i]
+    let g = data[i + 1]
+    let b = data[i + 2]
+
     // Apply brightness
-    if (filter.brightness) {
-      data[i] *= filter.brightness // R
-      data[i + 1] *= filter.brightness // G
-      data[i + 2] *= filter.brightness // B
+    if (hasBrightness) {
+      r = Math.min(255, Math.max(0, r * brightness))
+      g = Math.min(255, Math.max(0, g * brightness))
+      b = Math.min(255, Math.max(0, b * brightness))
     }
 
     // Apply contrast
-    if (filter.contrast) {
-      const factor = (259 * (filter.contrast + 255)) / (255 * (259 - filter.contrast))
-      data[i] = factor * (data[i] - 128) + 128
-      data[i + 1] = factor * (data[i + 1] - 128) + 128
-      data[i + 2] = factor * (data[i + 2] - 128) + 128
+    if (hasContrast) {
+      r = Math.min(255, Math.max(0, contrastFactor * (r - 128) + 128))
+      g = Math.min(255, Math.max(0, contrastFactor * (g - 128) + 128))
+      b = Math.min(255, Math.max(0, contrastFactor * (b - 128) + 128))
     }
 
     // Apply saturation
-    if (filter.saturation) {
-      const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2]
-      data[i] = gray * (1 - filter.saturation) + data[i] * filter.saturation
-      data[i + 1] = gray * (1 - filter.saturation) + data[i + 1] * filter.saturation
-      data[i + 2] = gray * (1 - filter.saturation) + data[i + 2] * filter.saturation
+    if (hasSaturation) {
+      const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+      r = Math.min(255, Math.max(0, gray * invSat + r * sat))
+      g = Math.min(255, Math.max(0, gray * invSat + g * sat))
+      b = Math.min(255, Math.max(0, gray * invSat + b * sat))
     }
+
+    // Write back once
+    data[i] = r
+    data[i + 1] = g
+    data[i + 2] = b
   }
 
   ctx.putImageData(imageData, 0, 0)
