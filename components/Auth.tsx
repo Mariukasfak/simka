@@ -1,29 +1,30 @@
-'use client'
+"use client";
 
-import { Auth as SupabaseAuth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { supabase } from '@/lib/supabase'
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function Auth() {
-  const [redirectUrl, setRedirectUrl] = useState('/auth/callback')
-  const [isConfigurationValid, setIsConfigurationValid] = useState(true)
-  
+  const [redirectUrl, setRedirectUrl] = useState("/auth/callback");
+  const [isConfigurationValid, setIsConfigurationValid] = useState(true);
+
   // Tikriname, ar Supabase konfigūracija yra tinkama tikrai autentifikacijai
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL
-    if (!url || url.includes('example.supabase.co')) {
-      setIsConfigurationValid(false)
+    const url =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    if (!url || url.includes("example.supabase.co")) {
+      setIsConfigurationValid(false);
     }
-  }, [])
-  
+  }, []);
+
   // Tik klientinėje pusėje naudojame window objektą
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setRedirectUrl(`${window.location.origin}/auth/callback`)
+    if (typeof window !== "undefined") {
+      setRedirectUrl(`${window.location.origin}/auth/callback`);
     }
-  }, [])
+  }, []);
 
   if (!isConfigurationValid) {
     return (
@@ -33,14 +34,19 @@ export default function Auth() {
             ⚠️ Supabase konfigūracija neužbaigta
           </div>
           <p className="text-gray-700 mb-4">
-            Trūksta Supabase aplinkos kintamųjų. Autentifikacija laikinai neveikia.
+            Trūksta Supabase aplinkos kintamųjų. Autentifikacija laikinai
+            neveikia.
           </p>
           <p className="text-sm text-gray-500">
-            Dėl testavimo galite tęsti su <Link href="/" className="text-blue-500 hover:underline">pagrindiniu puslapiu</Link>.
+            Dėl testavimo galite tęsti su{" "}
+            <Link href="/" className="text-blue-500 hover:underline">
+              pagrindiniu puslapiu
+            </Link>
+            .
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -52,5 +58,5 @@ export default function Auth() {
         redirectTo={redirectUrl}
       />
     </div>
-  )
+  );
 }

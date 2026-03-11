@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import Auth from '@/components/Auth'
+import Auth from "@/components/Auth";
 
 export default function Login() {
   return (
@@ -14,5 +14,5 @@ export default function Login() {
         <Auth />
       </div>
     </div>
-  )
+  );
 }

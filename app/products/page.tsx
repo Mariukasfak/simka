@@ -1,50 +1,50 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import Image from 'next/image'
-import Link from 'next/link'
-import type { Product } from '@/lib/types'
+import { useState } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import Image from "next/image";
+import Link from "next/link";
+import type { Product } from "@/lib/types";
 
 export default function ProductsPage() {
   const [products] = useState<Product[]>([
     {
-      id: 'hoodie-dark',
-      name: 'Džemperis (tamsus)',
-      description: 'Aukštos kokybės medvilninis džemperis su gobtuvu',
-      imageUrl: '/images/hoodie_dark.png',
-      type: 'hoodie',
-      color: 'dark',
-      price: 39.99
+      id: "hoodie-dark",
+      name: "Džemperis (tamsus)",
+      description: "Aukštos kokybės medvilninis džemperis su gobtuvu",
+      imageUrl: "/images/hoodie_dark.png",
+      type: "hoodie",
+      color: "dark",
+      price: 39.99,
     },
     {
-      id: 'hoodie-light',
-      name: 'Džemperis (šviesus)',
-      description: 'Klasikinis šviesus džemperis su gobtuvu',
-      imageUrl: '/images/hoodie_light.png',
-      type: 'hoodie',
-      color: 'light',
-      price: 39.99
+      id: "hoodie-light",
+      name: "Džemperis (šviesus)",
+      description: "Klasikinis šviesus džemperis su gobtuvu",
+      imageUrl: "/images/hoodie_light.png",
+      type: "hoodie",
+      color: "light",
+      price: 39.99,
     },
     {
-      id: 'tshirt-dark',
-      name: 'Marškinėliai (tamsūs)',
-      description: 'Patogūs medvilniniai marškinėliai',
-      imageUrl: '/images/tshirt_dark.png',
-      type: 'tshirt',
-      color: 'dark',
-      price: 24.99
+      id: "tshirt-dark",
+      name: "Marškinėliai (tamsūs)",
+      description: "Patogūs medvilniniai marškinėliai",
+      imageUrl: "/images/tshirt_dark.png",
+      type: "tshirt",
+      color: "dark",
+      price: 24.99,
     },
     {
-      id: 'tshirt-light',
-      name: 'Marškinėliai (šviesūs)',
-      description: 'Lengvi ir stilingi marškinėliai',
-      imageUrl: '/images/tshirt_light.png',
-      type: 'tshirt',
-      color: 'light',
-      price: 24.99
-    }
-  ])
+      id: "tshirt-light",
+      name: "Marškinėliai (šviesūs)",
+      description: "Lengvi ir stilingi marškinėliai",
+      imageUrl: "/images/tshirt_light.png",
+      type: "tshirt",
+      color: "light",
+      price: 24.99,
+    },
+  ]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -59,7 +59,7 @@ export default function ProductsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {products.map((product) => (
-          <div 
+          <div
             key={product.id}
             className="bg-white rounded-lg shadow-lg overflow-hidden transition-transform hover:scale-105"
           >
@@ -72,14 +72,12 @@ export default function ProductsPage() {
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               />
             </div>
-            
+
             <div className="p-6">
               <h3 className="text-lg font-semibold text-brand-900 mb-2">
                 {product.name}
               </h3>
-              <p className="text-brand-600 mb-4">
-                {product.description}
-              </p>
+              <p className="text-brand-600 mb-4">{product.description}</p>
               <div className="flex items-center justify-between">
                 <span className="text-xl font-bold text-brand-900">
                   €{product.price}
@@ -103,13 +101,10 @@ export default function ProductsPage() {
         <p className="text-brand-600 mb-8 max-w-2xl mx-auto">
           Susisiekite su mumis dėl individualių užsakymų ar didesnių kiekių
         </p>
-        <Link
-          href="/"
-          className="btn btn-outline"
-        >
+        <Link href="/" className="btn btn-outline">
           Susisiekti
         </Link>
       </div>
     </div>
-  )
+  );
 }

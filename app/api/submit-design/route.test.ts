@@ -1,12 +1,14 @@
-import { describe, it, before, after, mock } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, before, after, mock } from "node:test";
+import assert from "node:assert";
 
 // Mock dependencies
-const sendMailMock = mock.fn(() => Promise.resolve({ messageId: 'test-id' }));
+const sendMailMock = mock.fn(() => Promise.resolve({ messageId: "test-id" }));
 const insertMock = mock.fn(() => Promise.resolve({ error: null }));
-const getSessionMock = mock.fn(() => Promise.resolve({ data: { session: { user: { id: 'test-user-id' } } } }));
+const getSessionMock = mock.fn(() =>
+  Promise.resolve({ data: { session: { user: { id: "test-user-id" } } } }),
+);
 
-mock.module('nodemailer', {
+mock.module("nodemailer", {
   namedExports: {
     createTransport: mock.fn(() => ({
       sendMail: sendMailMock,
@@ -14,7 +16,7 @@ mock.module('nodemailer', {
   },
 });
 
-mock.module('@supabase/auth-helpers-nextjs', {
+mock.module("@supabase/auth-helpers-nextjs", {
   namedExports: {
     createRouteHandlerClient: mock.fn(() => ({
       auth: {
@@ -27,13 +29,13 @@ mock.module('@supabase/auth-helpers-nextjs', {
   },
 });
 
-mock.module('next/headers', {
+mock.module("next/headers", {
   namedExports: {
     cookies: mock.fn(() => ({})),
   },
 });
 
-mock.module('next/server', {
+mock.module("next/server", {
   namedExports: {
     NextResponse: {
       json: mock.fn((body, init) => ({
@@ -45,37 +47,37 @@ mock.module('next/server', {
   },
 });
 
-describe('Submit Design API', () => {
+describe("Submit Design API", () => {
   let POST: any;
 
   const validData = {
-    name: 'Jonas Jonaitis',
-    email: 'jonas@example.com',
-    phone: '+37060000000',
-    size: 'L',
+    name: "Jonas Jonaitis",
+    email: "jonas@example.com",
+    phone: "+37060000000",
+    size: "L",
     quantity: 1,
-    comments: 'Test comment',
-    product: { id: 't-shirt-1', name: 'T-Shirt', type: 't-shirt' },
-    printAreas: ['front'],
-    totalPrice: 25.00,
-    designPreviews: { front: 'data:image/png;base64,fake' },
+    comments: "Test comment",
+    product: { id: "t-shirt-1", name: "T-Shirt", type: "t-shirt" },
+    printAreas: ["front"],
+    totalPrice: 25.0,
+    designPreviews: { front: "data:image/png;base64,fake" },
     designStates: {},
-    uploadedImage: 'data:image/png;base64,fake-logo',
+    uploadedImage: "data:image/png;base64,fake-logo",
   };
 
   before(async () => {
-    process.env.EMAIL_SERVER = 'smtp.example.com';
-    process.env.EMAIL_PORT = '587';
-    process.env.EMAIL_USER = 'user@example.com';
-    process.env.EMAIL_PASSWORD = 'password';
-    process.env.EMAIL_FROM = 'noreply@example.com';
-    process.env.EMAIL_TO = 'recipient@example.com';
-    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
+    process.env.EMAIL_SERVER = "smtp.example.com";
+    process.env.EMAIL_PORT = "587";
+    process.env.EMAIL_USER = "user@example.com";
+    process.env.EMAIL_PASSWORD = "password";
+    process.env.EMAIL_FROM = "noreply@example.com";
+    process.env.EMAIL_TO = "recipient@example.com";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-key";
 
     // Import the module under test dynamically to ensure mocks are active
     // @ts-expect-error
-    const routeModule = await import('./route.ts');
+    const routeModule = await import("./route.ts");
     POST = routeModule.POST;
   });
 
@@ -83,7 +85,7 @@ describe('Submit Design API', () => {
     mock.reset();
   });
 
-  it('should successfully process a valid order', async () => {
+  it("should successfully process a valid order", async () => {
     const request = {
       json: async () => validData,
     };
@@ -107,8 +109,8 @@ describe('Submit Design API', () => {
     assert.strictEqual(insertMock.mock.calls.length, 1);
   });
 
-  it('should return 400 for invalid data', async () => {
-    const invalidData = { ...validData, email: 'invalid-email' };
+  it("should return 400 for invalid data", async () => {
+    const invalidData = { ...validData, email: "invalid-email" };
     const request = {
       json: async () => invalidData,
     };
@@ -126,9 +128,11 @@ describe('Submit Design API', () => {
     assert.strictEqual(insertMock.mock.calls.length, 0);
   });
 
-  it('should return 200 even if database save fails', async () => {
+  it("should return 200 even if database save fails", async () => {
     // Setup DB mock to fail
-    insertMock.mock.mockImplementationOnce(() => Promise.resolve({ error: 'DB Error' }));
+    insertMock.mock.mockImplementationOnce(() =>
+      Promise.resolve({ error: "DB Error" }),
+    );
     sendMailMock.mock.resetCalls();
 
     const request = {
@@ -143,9 +147,11 @@ describe('Submit Design API', () => {
     assert.strictEqual(sendMailMock.mock.calls.length, 1);
   });
 
-  it('should return 200 even if email sending fails', async () => {
+  it("should return 200 even if email sending fails", async () => {
     // Setup Email mock to fail
-    sendMailMock.mock.mockImplementationOnce(() => Promise.reject(new Error('Email Error')));
+    sendMailMock.mock.mockImplementationOnce(() =>
+      Promise.reject(new Error("Email Error")),
+    );
     // DB mock needs to be reset to success (it was mocked to fail in previous test, but we used mockImplementationOnce)
     // insertMock implementation is already success by default but let's be sure
 
