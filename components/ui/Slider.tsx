@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import React from 'react'
+import React from "react";
 
 interface SliderProps {
-  value: number
-  min: number
-  max: number
-  step?: number
-  onChange: (value: number) => void
-  className?: string
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (value: number) => void;
+  className?: string;
 }
 
 export function Slider({
@@ -17,7 +17,7 @@ export function Slider({
   max,
   step = 0.01,
   onChange,
-  className = '',
+  className = "",
 }: SliderProps) {
   return (
     <div className={`w-full ${className}`}>
@@ -34,5 +34,5 @@ export function Slider({
         }}
       />
     </div>
-  )
+  );
 }

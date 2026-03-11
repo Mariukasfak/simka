@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import Link from "next/link";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Tikriname vartotojo prisijungimo būseną
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data } = await supabase.auth.getSession()
-        setIsLoggedIn(!!data.session)
+        const { data } = await supabase.auth.getSession();
+        setIsLoggedIn(!!data.session);
       } catch (error) {
-        console.error('Autentifikacijos klaida:', error)
+        console.error("Autentifikacijos klaida:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    checkUser()
-  }, [])
+    checkUser();
+  }, []);
 
   return (
     <header className="bg-white shadow-sm">
@@ -36,34 +36,34 @@ export default function Header() {
                 alt="Siemka.lt"
                 width={120}
                 height={32}
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
                 className="h-8 w-auto"
                 priority
               />
             </Link>
           </div>
-          
+
           <nav className="hidden md:flex space-x-8">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Pagrindinis
             </Link>
-            <Link 
-              href="/products" 
+            <Link
+              href="/products"
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Produktai
             </Link>
-            <Link 
-              href={{ pathname: '/about' }}
+            <Link
+              href={{ pathname: "/about" }}
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Apie mus
             </Link>
-            <Link 
-              href={{ pathname: '/contact' }}
+            <Link
+              href={{ pathname: "/contact" }}
               className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
             >
               Kontaktai
@@ -76,15 +76,15 @@ export default function Header() {
             ) : isLoggedIn ? (
               <div className="flex space-x-4">
                 <Link
-                  href={{ pathname: '/account' }}
+                  href={{ pathname: "/account" }}
                   className="text-brand-dark hover:text-brand-primary px-3 py-2 text-sm font-medium"
                 >
                   Mano paskyra
                 </Link>
                 <button
                   onClick={async () => {
-                    await supabase.auth.signOut()
-                    setIsLoggedIn(false)
+                    await supabase.auth.signOut();
+                    setIsLoggedIn(false);
                   }}
                   className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
                 >
@@ -99,7 +99,7 @@ export default function Header() {
                 Prisijungti
               </Link>
             )}
-            
+
             <a
               href="https://siemka.lt"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary"
@@ -112,5 +112,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }
