@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
@@ -10,7 +11,11 @@ interface ProductSelectorProps {
   onSelect: (product: Product) => void
 }
 
-export default function ProductSelector({
+// ⚡ PERFORMANCE: Wrapped in React.memo to prevent unnecessary re-renders
+// when the parent component (WizardContent / HomeContent) state changes
+// (e.g., during active wizard steps or other form state changes).
+// The parent already memoizes the onSelect callback using useCallback.
+export default React.memo(function ProductSelector({
   products,
   selectedProduct,
   onSelect
@@ -101,4 +106,4 @@ export default function ProductSelector({
       )}
     </div>
   )
-}
+})

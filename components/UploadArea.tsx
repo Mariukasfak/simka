@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, Image as ImageIcon, X, Edit2 } from 'lucide-react'
 import { Button, buttonVariants } from './ui/Button'
@@ -10,7 +10,10 @@ interface UploadAreaProps {
   onImageUpload: (imageUrl: string) => void
 }
 
-export default function UploadArea({ onImageUpload }: UploadAreaProps) {
+// ⚡ PERFORMANCE: Wrapped in React.memo to prevent unnecessary re-renders
+// when the parent component state changes. The parent correctly memoizes
+// the onImageUpload callback prop using useCallback.
+export default React.memo(function UploadArea({ onImageUpload }: UploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [currentImage, setCurrentImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -278,4 +281,4 @@ export default function UploadArea({ onImageUpload }: UploadAreaProps) {
       )}
     </div>
   )
-}
+})
