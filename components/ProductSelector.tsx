@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
@@ -10,7 +11,12 @@ interface ProductSelectorProps {
   onSelect: (product: Product) => void
 }
 
-export default function ProductSelector({
+// ⚡ Bolt Optimization: Wrap component in React.memo to prevent unnecessary re-renders.
+// The parent (HomeContent) frequently updates its state (e.g. design previews, wizard steps).
+// Since the products list and the onSelect callback (which is wrapped in useCallback)
+// are stable, wrapping ProductSelector in React.memo ensures that this entire static list
+// doesn't re-render unless the selectedProduct changes, saving CPU cycles.
+const ProductSelector = React.memo(function ProductSelector({
   products,
   selectedProduct,
   onSelect
@@ -101,4 +107,6 @@ export default function ProductSelector({
       )}
     </div>
   )
-}
+})
+
+export default ProductSelector
