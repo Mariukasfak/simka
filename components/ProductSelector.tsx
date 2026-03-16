@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
@@ -10,7 +11,10 @@ interface ProductSelectorProps {
   onSelect: (product: Product) => void
 }
 
-export default function ProductSelector({
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent components
+// (like WizardContent or HomeContent) update their state frequently. The props passed
+// (products array, selectedProduct, and onSelect callback) are stable.
+const ProductSelector = React.memo(function ProductSelector({
   products,
   selectedProduct,
   onSelect
@@ -33,6 +37,8 @@ export default function ProductSelector({
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            role="radio"
+            aria-checked={selectedProduct.id === product.id}
           >
             <div className="relative aspect-square bg-white rounded overflow-hidden">
               <Image
@@ -101,4 +107,6 @@ export default function ProductSelector({
       )}
     </div>
   )
-}
+})
+
+export default ProductSelector
