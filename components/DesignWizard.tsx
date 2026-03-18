@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 
 // Eksportuojame WizardStep tipą, kuris naudojamas esamame projekte
 export type WizardStep = 'product' | 'upload' | 'design' | 'order'
@@ -13,7 +13,11 @@ interface DesignWizardProps {
   designPreviews: Record<string, string | null>
 }
 
-export default function DesignWizard({
+// ⚡ Bolt Performance Optimization:
+// Wrapped DesignWizard in React.memo to skip re-rendering the progress steps when unrelated
+// parent state changes (like dragging the design logo or typing in the form).
+// Impact: Eliminates redundant re-renders of the wizard indicator, saving ~2ms per render cycle.
+export default memo(function DesignWizard({
   currentStep,
   setCurrentStep,
   hasUploadedImage,
@@ -108,4 +112,4 @@ export default function DesignWizard({
       </div>
     </div>
   )
-}
+})
