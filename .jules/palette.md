@@ -1,0 +1,4 @@
+
+## 2024-03-19 - Missing aria-labels and keyboard focus on custom icon buttons and wizard navigation
+**Learning:** Found that custom `X` icon-only buttons inside the design canvas (`EnhancedDesignCanvas.tsx`) lacked `aria-label`s for screen readers. In addition, the design canvas buttons and wizard navigation buttons (`WizardContent.tsx`) lacked `focus-visible` keyboard focus indicators. This pattern decreases accessibility significantly for keyboard and screen reader users navigating complex interactive tools.
+**Action:** Always add localized `aria-label`s (e.g. "Uždaryti patarimą", "Uždaryti pagalbą" since the app is in Lithuanian) to icon-only buttons. Add standard focus indicators using `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500` to ensure keyboard navigation path is visible, adding `rounded` for icon-buttons or `focus-visible:ring-offset-2` for solid background buttons.
