@@ -86,7 +86,7 @@ export default function Header() {
                     await supabase.auth.signOut()
                     setIsLoggedIn(false)
                   }}
-                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded"
                 >
                   Atsijungti
                 </button>
