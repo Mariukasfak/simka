@@ -1,0 +1,3 @@
+## 2024-03-23 - Focus Visible styling for raw buttons
+**Learning:** Raw `<button>` elements across the project often lack keyboard focus indicators (`focus-visible`) and `aria-label`s for icon-only buttons (like the `Help` and `X` close tooltips in `EnhancedDesignCanvas`), significantly reducing keyboard and screen reader accessibility. Standard `ui/Button` components already handle this well.
+**Action:** When adding new interactive elements or raw `<button>`s, always ensure they have `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color]` utility classes for keyboard users, and explicit `aria-label`s for screen readers when they lack visible text.
