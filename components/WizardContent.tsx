@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { WizardStep } from "./DesignWizard";
 import ProductSelector from "./ProductSelector";
 import UploadArea from "./UploadArea";
@@ -111,16 +111,21 @@ export default function WizardContent({
     </div>
   );
 
+  // ⚡ BOLT PERFORMANCE OPTIMIZATION: Memoize product image selection to avoid recalculating on every render
+  const currentProductImage = useMemo(() => {
+    const views = PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS] || {};
+    return views && currentView in views
+      ? views[currentView as keyof typeof views]
+      : selectedProduct.imageUrl;
+  }, [selectedProduct.id, selectedProduct.imageUrl, currentView]);
+
+  // ⚡ BOLT PERFORMANCE OPTIMIZATION: Memoize the check for existing designs to prevent recalculating `Object.values(designPreviews).some(...)` on every render.
+  const hasAnyDesign = useMemo(() => {
+    return Object.values(designPreviews).some((p) => p !== null);
+  }, [designPreviews]);
+
   // Dizaino redagavimo žingsnis
   const renderDesignStep = () => {
-    // Gauname dabartinio produkto vaizdą iš importuoto PRODUCT_VIEWS
-    const views =
-      PRODUCT_VIEWS[selectedProduct.id as keyof typeof PRODUCT_VIEWS] || {};
-    const currentProductImage =
-      views && currentView in views
-        ? views[currentView as keyof typeof views]
-        : selectedProduct.imageUrl;
-
     return (
       <div className="space-y-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -181,9 +186,9 @@ export default function WizardContent({
           </button>
           <button
             onClick={onNextStep}
-            disabled={!Object.values(designPreviews).some((p) => p !== null)}
+            disabled={!hasAnyDesign}
             className={`px-6 py-2 ${
-              Object.values(designPreviews).some((p) => p !== null)
+              hasAnyDesign
                 ? "bg-accent-600 text-white hover:bg-accent-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             } rounded-lg transition-colors`}
@@ -241,7 +246,7 @@ export default function WizardContent({
             <EnhancedOrderForm
               onSubmit={onOrderSubmit}
               isSubmitting={isSubmitting}
-              disabled={!Object.values(designPreviews).some((p) => p !== null)}
+              disabled={!hasAnyDesign}
               designPreviews={designPreviews}
               printAreas={Object.keys(printAreas) as any[]}
               productPrice={selectedProduct.price}
