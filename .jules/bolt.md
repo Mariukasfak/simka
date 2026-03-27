@@ -1,3 +1,7 @@
 ## 2024-05-23 - [Prevented Parent Re-renders on Drag]
 **Learning:** React components re-rendering on every mouse move (even if throttled) can be a significant performance bottleneck, especially if the parent component is complex.
 **Action:** Use local state for high-frequency updates (like dragging) and only sync with the parent state on completion (drag end). This isolates the re-renders to the leaf component.
+
+## 2024-05-24 - [Optimized Image Processing with LUTs]
+**Learning:** For high-performance image processing loops (e.g. iterating over `data.length / 4` pixels in `ImageData`), performing mathematical operations (like calculating contrast factors or multiplying brightness) per-pixel is incredibly inefficient. A 1D Look-Up Table (LUT) is a massive optimization. However, when using a LUT and extracting RGB values from a `Uint8ClampedArray` to standard JS numbers for intermediate steps, you must manually clamp the numbers (`Math.min(255, Math.max(0, val))`) before subsequent operations (like contrast) to prevent overflow logic errors that the implicit array clamping usually handles. Also, a `Uint8ClampedArray` should be used for the LUT itself to maintain perfect pixel-parity with the original clamping behavior.
+**Action:** When optimizing pixel manipulation loops in JS/TS, use pre-calculated `Uint8ClampedArray` LUTs for any operation that maps 0-255 values to new 0-255 values (like brightness, contrast, thresholding). Hoist all invariant conditions outside the main loop.
