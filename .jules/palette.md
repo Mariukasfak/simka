@@ -1,0 +1,4 @@
+
+## 2024-05-20 - Adding Accessibility to Raw `<button>` Elements in React
+**Learning:** In the `siemka-design-tool` repository, standard `components/ui/Button.tsx` elements inherently support keyboard accessibility and focus styles. However, raw `<button>` tags (often used for simple icon-only close buttons) lack these visual cues and labels. Screen readers may misinterpret visual elements like SVG icons inside these buttons if not properly hidden.
+**Action:** When creating or modifying raw `<button>` elements (especially icon-only ones), manually apply `focus-visible` utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded`) for keyboard navigation. Always add a descriptive `aria-label` to the button and `aria-hidden="true"` to the internal SVG/icon (like Lucide icons) so screen readers announce the label instead of the visual content.
