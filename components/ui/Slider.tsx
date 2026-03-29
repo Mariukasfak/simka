@@ -9,6 +9,8 @@ interface SliderProps {
   step?: number
   onChange: (value: number) => void
   className?: string
+  id?: string
+  'aria-label'?: string
 }
 
 export function Slider({
@@ -18,6 +20,8 @@ export function Slider({
   step = 0.01,
   onChange,
   className = '',
+  id,
+  'aria-label': ariaLabel,
 }: SliderProps) {
   return (
     <div className={`w-full ${className}`}>
@@ -32,6 +36,8 @@ export function Slider({
         style={{
           background: `linear-gradient(to right, #4F46E5 0%, #4F46E5 ${((value - min) / (max - min)) * 100}%, #E5E7EB ${((value - min) / (max - min)) * 100}%, #E5E7EB 100%)`,
         }}
+        id={id}
+        aria-label={ariaLabel}
       />
     </div>
   )

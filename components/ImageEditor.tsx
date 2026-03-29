@@ -223,8 +223,14 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
             <h4 className="text-sm font-medium">Koregavimai</h4>
             
             <div>
-              <label className="text-sm text-gray-600">Šviesumas</label>
+              <label
+                htmlFor="editor-brightness-slider"
+                className="text-sm text-gray-600"
+              >
+                Šviesumas
+              </label>
               <Slider
+                id="editor-brightness-slider"
                 value={brightness}
                 min={-1}
                 max={1}
@@ -234,8 +240,14 @@ export default function ImageEditor({ imageUrl, onSave, onCancel }: ImageEditorP
             </div>
 
             <div>
-              <label className="text-sm text-gray-600">Kontrastas</label>
+              <label
+                htmlFor="editor-contrast-slider"
+                className="text-sm text-gray-600"
+              >
+                Kontrastas
+              </label>
               <Slider
+                id="editor-contrast-slider"
                 value={contrast}
                 min={-1}
                 max={1}

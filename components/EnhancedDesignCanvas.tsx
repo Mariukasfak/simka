@@ -440,7 +440,10 @@ export default function EnhancedDesignCanvas({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <div className="flex justify-between items-center mb-1">
-            <label className="text-sm font-medium text-brand-900">
+            <label
+              htmlFor="canvas-size-slider"
+              className="text-sm font-medium text-brand-900"
+            >
               Dydis
             </label>
             <span className="text-sm text-brand-600">
@@ -448,6 +451,7 @@ export default function EnhancedDesignCanvas({
             </span>
           </div>
           <Slider
+            id="canvas-size-slider"
             value={designState.scale}
             min={0.2}
             max={3}
@@ -461,7 +465,10 @@ export default function EnhancedDesignCanvas({
         
         <div>
           <div className="flex justify-between items-center mb-1">
-            <label className="text-sm font-medium text-brand-900">
+            <label
+              htmlFor="canvas-opacity-slider"
+              className="text-sm font-medium text-brand-900"
+            >
               Permatomumas
             </label>
             <span className="text-sm text-brand-600">
@@ -469,6 +476,7 @@ export default function EnhancedDesignCanvas({
             </span>
           </div>
           <Slider
+            id="canvas-opacity-slider"
             value={designState.opacity}
             min={0.1}
             max={1}
