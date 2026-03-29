@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense, useCallback, useMemo } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import ProductSelector from '@/components/ProductSelector'
@@ -13,6 +13,46 @@ import { useDesignState } from '@/lib/hooks/useDesignState'
 import { PRINT_AREAS, PRODUCT_VIEWS } from '@/lib/constants'
 import { toast } from 'react-hot-toast'
 import type { Product } from '@/lib/types'
+
+// Static products definition - performance optimization
+const PRODUCTS: Product[] = [
+  {
+    id: 'hoodie-dark',
+    name: 'Džemperis (tamsus)',
+    imageUrl: '/images/hoodie_dark.png',
+    type: 'hoodie',
+    color: 'dark',
+    price: 39.99,
+    description: 'Kokybiškas, šiltas džemperis su gobtuvu. Puikiai tinka vėsesniam orui. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
+  },
+  {
+    id: 'hoodie-light',
+    name: 'Džemperis (šviesus)',
+    imageUrl: '/images/hoodie_light_front.png',
+    type: 'hoodie',
+    color: 'light',
+    price: 39.99,
+    description: 'Stilingas šviesus džemperis su gobtuvu. Minkštas vidus užtikrina komfortą. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
+  },
+  {
+    id: 'tshirt-dark',
+    name: 'Marškinėliai (tamsūs)',
+    imageUrl: '/images/tshirt_dark.png',
+    type: 'tshirt',
+    color: 'dark',
+    price: 24.99,
+    description: 'Klasikiniai juodi marškinėliai trumpomis rankovėmis. Pagaminti iš aukštos kokybės medvilnės. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
+  },
+  {
+    id: 'tshirt-light',
+    name: 'Marškinėliai (šviesūs)',
+    imageUrl: '/images/tshirt_light.png',
+    type: 'tshirt',
+    color: 'light',
+    price: 24.99,
+    description: 'Lengvi ir patogūs balti marškinėliai. Puikiai tinka spaudai. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
+  }
+];
 
 // Sukuriame atskirą komponentą su useSearchParams
 function HomeContent() {
@@ -43,59 +83,19 @@ function HomeContent() {
     'right-sleeve': null
   })
   
-  // Atnaujiname pradinius produktus, naudodami useMemo
-  const products: Product[] = useMemo(() => [
-    {
-      id: 'hoodie-dark',
-      name: 'Džemperis (tamsus)',
-      imageUrl: '/images/hoodie_dark.png',
-      type: 'hoodie',
-      color: 'dark',
-      price: 39.99,
-      description: 'Kokybiškas, šiltas džemperis su gobtuvu. Puikiai tinka vėsesniam orui. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
-    },
-    {
-      id: 'hoodie-light',
-      name: 'Džemperis (šviesus)',
-      imageUrl: '/images/hoodie_light_front.png',
-      type: 'hoodie',
-      color: 'light',
-      price: 39.99,
-      description: 'Stilingas šviesus džemperis su gobtuvu. Minkštas vidus užtikrina komfortą. Sudėtis: 80% medvilnė, 20% poliesteris. Gramatūra: 280 g/m².'
-    },
-    {
-      id: 'tshirt-dark',
-      name: 'Marškinėliai (tamsūs)',
-      imageUrl: '/images/tshirt_dark.png',
-      type: 'tshirt',
-      color: 'dark',
-      price: 24.99,
-      description: 'Klasikiniai juodi marškinėliai trumpomis rankovėmis. Pagaminti iš aukštos kokybės medvilnės. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
-    },
-    {
-      id: 'tshirt-light',
-      name: 'Marškinėliai (šviesūs)',
-      imageUrl: '/images/tshirt_light.png',
-      type: 'tshirt',
-      color: 'light',
-      price: 24.99,
-      description: 'Lengvi ir patogūs balti marškinėliai. Puikiai tinka spaudai. Sudėtis: 100% medvilnė. Gramatūra: 180 g/m².'
-    }
-  ], []);
-  
-  const [selectedProduct, setSelectedProduct] = useState<Product>(products[1]); // Džemperis (šviesus) kaip numatytasis
+  const [selectedProduct, setSelectedProduct] = useState<Product>(PRODUCTS[1]); // Džemperis (šviesus) kaip numatytasis
 
   // Load product from URL params - optimizuotas priklausomybėms
   const productId = searchParams?.get('product')
 
   useEffect(() => {
     if (productId) {
-      const product = products.find(p => p.id === productId)
+      const product = PRODUCTS.find(p => p.id === productId)
       if (product) {
         setSelectedProduct(product)
       }
     }
-  }, [productId, products])
+  }, [productId])
 
   // Simulate loading only if design tool is visible
   useEffect(() => {
@@ -223,6 +223,13 @@ function HomeContent() {
     }, 100)
   }
 
+  // Make PRODUCT_VIEWS globally available for the wizard
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).PRODUCT_VIEWS = PRODUCT_VIEWS;
+    }
+  }, []);
+
   // Kraunasi būsena - optimizuota versija
   if (isLoading && showDesignTool) {
     return (
@@ -233,11 +240,6 @@ function HomeContent() {
         </div>
       </div>
     )
-  }
-
-  // Make PRODUCT_VIEWS globally available for the wizard
-  if (typeof window !== 'undefined') {
-    (window as any).PRODUCT_VIEWS = PRODUCT_VIEWS;
   }
 
   return (
@@ -323,7 +325,7 @@ function HomeContent() {
           
           <WizardContent
             currentStep={currentWizardStep}
-            products={products}
+            products={PRODUCTS}
             selectedProduct={selectedProduct}
             uploadedImage={uploadedImage}
             designState={designState}
