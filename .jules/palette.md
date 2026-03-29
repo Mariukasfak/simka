@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessible raw icon-only buttons
+**Learning:** Raw `<button>` elements that only contain an icon require an `aria-label` to be accessible. Furthermore, the icon itself must have `aria-hidden="true"` so that screen readers don't double-announce. Finally, raw buttons don't have focus states by default in this application, so `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded` should be explicitly added for keyboard accessibility.
+**Action:** Always check raw `<button>` elements in this codebase to ensure they have an `aria-label` when no visible text is present, hide the inner icon from screen readers, and add explicit `focus-visible` utility classes.
