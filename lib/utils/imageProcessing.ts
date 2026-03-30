@@ -90,28 +90,45 @@ export function applyImageFilter(
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
-    // Apply brightness
-    if (filter.brightness) {
-      data[i] *= filter.brightness // R
-      data[i + 1] *= filter.brightness // G
-      data[i + 2] *= filter.brightness // B
-    }
+  // ⚡ Bolt Performance Optimization:
+  // Use a 1D Look-Up Table (LUT) to pre-calculate brightness and contrast.
+  // Hoist saturation checks outside the main loop.
+  const lut = new Uint8Array(256)
+  const hasBrightness = !!filter.brightness
+  const hasContrast = !!filter.contrast
+  const factor = hasContrast ? (259 * (filter.contrast! + 255)) / (255 * (259 - filter.contrast!)) : 1
 
-    // Apply contrast
-    if (filter.contrast) {
-      const factor = (259 * (filter.contrast + 255)) / (255 * (259 - filter.contrast))
-      data[i] = factor * (data[i] - 128) + 128
-      data[i + 1] = factor * (data[i + 1] - 128) + 128
-      data[i + 2] = factor * (data[i + 2] - 128) + 128
+  for (let i = 0; i < 256; i++) {
+    let val = i
+    if (hasBrightness) {
+      val *= filter.brightness!
+      val = Math.min(255, Math.max(0, val))
     }
+    if (hasContrast) {
+      val = factor * (val - 128) + 128
+      val = Math.min(255, Math.max(0, val))
+    }
+    lut[i] = val
+  }
 
-    // Apply saturation
-    if (filter.saturation) {
-      const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2]
-      data[i] = gray * (1 - filter.saturation) + data[i] * filter.saturation
-      data[i + 1] = gray * (1 - filter.saturation) + data[i + 1] * filter.saturation
-      data[i + 2] = gray * (1 - filter.saturation) + data[i + 2] * filter.saturation
+  if (filter.saturation) {
+    const s = filter.saturation
+    const invS = 1 - s
+    for (let i = 0; i < data.length; i += 4) {
+      const r = lut[data[i]]
+      const g = lut[data[i + 1]]
+      const b = lut[data[i + 2]]
+
+      const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+      data[i] = gray * invS + r * s
+      data[i + 1] = gray * invS + g * s
+      data[i + 2] = gray * invS + b * s
+    }
+  } else {
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = lut[data[i]]
+      data[i + 1] = lut[data[i + 1]]
+      data[i + 2] = lut[data[i + 2]]
     }
   }
 
