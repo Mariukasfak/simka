@@ -149,6 +149,12 @@ export default function MultiDesignCanvas({
     onSelectDesign(designId)
   }
 
+  // ⚡ Bolt Performance Optimization: Memoize the active design to avoid redundant O(n) array lookups during the render cycle.
+  const activeDesign = useMemo(() => {
+    if (!activeDesignId) return null
+    return designs.find(d => d.id === activeDesignId) || null
+  }, [designs, activeDesignId])
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
@@ -265,7 +271,7 @@ export default function MultiDesignCanvas({
           <div>
             <label className="text-sm text-gray-600">Dydis</label>
             <Slider
-              value={designs.find(d => d.id === activeDesignId)?.scale || 1}
+              value={activeDesign?.scale || 1}
               min={0.2}
               max={3}
               step={0.01}
@@ -276,7 +282,7 @@ export default function MultiDesignCanvas({
           <div>
             <label className="text-sm text-gray-600">Permatomumas</label>
             <Slider
-              value={designs.find(d => d.id === activeDesignId)?.opacity || 1}
+              value={activeDesign?.opacity || 1}
               min={0.1}
               max={1}
               step={0.01}
@@ -291,10 +297,9 @@ export default function MultiDesignCanvas({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const design = designs.find(d => d.id === activeDesignId)
-                  if (design) {
+                  if (activeDesign) {
                     onUpdateDesign(activeDesignId, {
-                      rotation: design.rotation - 15
+                      rotation: activeDesign.rotation - 15
                     })
                   }
                 }}
@@ -306,10 +311,9 @@ export default function MultiDesignCanvas({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const design = designs.find(d => d.id === activeDesignId)
-                  if (design) {
+                  if (activeDesign) {
                     onUpdateDesign(activeDesignId, {
-                      rotation: design.rotation + 15
+                      rotation: activeDesign.rotation + 15
                     })
                   }
                 }}
