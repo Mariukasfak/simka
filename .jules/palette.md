@@ -1,0 +1,3 @@
+## 2024-03-31 - Keyboard Accessibility on Raw Buttons
+**Learning:** This application heavily relies on raw HTML `<button>` elements outside of the standard `components/ui/Button.tsx`. These raw buttons default to browser focus rings, which are often overridden or look inconsistent, leading to poor keyboard accessibility.
+**Action:** Always manually apply `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded` (or similar depending on context) and add appropriate `aria-label`s to icon-only raw `<button>` elements across the project to maintain accessibility standards.
