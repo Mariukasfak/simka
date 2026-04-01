@@ -90,28 +90,61 @@ export function applyImageFilter(
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imageData.data
 
-  for (let i = 0; i < data.length; i += 4) {
+  // ⚡ Bolt Performance Optimization: Using a 1D Look-Up Table (LUT) to pre-calculate brightness and contrast across all 256 possible pixel values. Combined with hoisting saturation checks outside the main loop, this eliminates millions of redundant math operations per image.
+  const lut = new Uint8ClampedArray(256)
+
+  const hasBrightness = filter.brightness !== undefined && filter.brightness !== 1
+  const hasContrast = filter.contrast !== undefined && filter.contrast !== 0
+
+  let contrastFactor = 1;
+  if (hasContrast) {
+    contrastFactor = (259 * (filter.contrast! + 255)) / (255 * (259 - filter.contrast!))
+  }
+
+  for (let i = 0; i < 256; i++) {
+    let val = i;
+
     // Apply brightness
-    if (filter.brightness) {
-      data[i] *= filter.brightness // R
-      data[i + 1] *= filter.brightness // G
-      data[i + 2] *= filter.brightness // B
+    if (hasBrightness) {
+      val = val * filter.brightness!;
     }
+
+    // Explicitly clamp before contrast to avoid overflow logic errors
+    val = Math.min(255, Math.max(0, val));
 
     // Apply contrast
-    if (filter.contrast) {
-      const factor = (259 * (filter.contrast + 255)) / (255 * (259 - filter.contrast))
-      data[i] = factor * (data[i] - 128) + 128
-      data[i + 1] = factor * (data[i + 1] - 128) + 128
-      data[i + 2] = factor * (data[i + 2] - 128) + 128
+    if (hasContrast) {
+      val = contrastFactor * (val - 128) + 128;
     }
 
-    // Apply saturation
-    if (filter.saturation) {
-      const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2]
-      data[i] = gray * (1 - filter.saturation) + data[i] * filter.saturation
-      data[i + 1] = gray * (1 - filter.saturation) + data[i + 1] * filter.saturation
-      data[i + 2] = gray * (1 - filter.saturation) + data[i + 2] * filter.saturation
+    // Final clamp for the LUT
+    lut[i] = Math.min(255, Math.max(0, val));
+  }
+
+  const hasSaturation = filter.saturation !== undefined && filter.saturation !== 1;
+
+  if (hasSaturation) {
+    const saturation = filter.saturation!;
+    const invSaturation = 1 - saturation;
+    for (let i = 0; i < data.length; i += 4) {
+      // First apply LUT for brightness/contrast
+      const r = lut[data[i]];
+      const g = lut[data[i + 1]];
+      const b = lut[data[i + 2]];
+
+      // Then apply saturation inline
+      const gray = 0.2989 * r + 0.5870 * g + 0.1140 * b;
+
+      data[i] = gray * invSaturation + r * saturation;
+      data[i + 1] = gray * invSaturation + g * saturation;
+      data[i + 2] = gray * invSaturation + b * saturation;
+    }
+  } else {
+    // Fast path: Only brightness and contrast
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = lut[data[i]];
+      data[i + 1] = lut[data[i + 1]];
+      data[i + 2] = lut[data[i + 2]];
     }
   }
 
