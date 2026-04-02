@@ -90,28 +90,49 @@ export function applyImageFilter(
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
   const data = imageData.data
 
+  // ⚡ Bolt Performance Optimization: Using 1D Look-Up Table (LUT) for brightness and contrast
+  // and hoisting saturation checks to eliminate redundant math operations per pixel.
+  const hasBrightness = filter.brightness !== undefined && filter.brightness !== 1;
+  const hasContrast = filter.contrast !== undefined && filter.contrast !== 0;
+  const hasSaturation = filter.saturation !== undefined && filter.saturation !== 1;
+
+  if (!hasBrightness && !hasContrast && !hasSaturation) return;
+
+  let lut: Uint8Array | null = null;
+
+  if (hasBrightness || hasContrast) {
+    lut = new Uint8Array(256);
+    let factor = 1;
+    if (hasContrast) {
+      factor = (259 * (filter.contrast! + 255)) / (255 * (259 - filter.contrast!));
+    }
+
+    for (let i = 0; i < 256; i++) {
+      let val = i;
+      if (hasBrightness) {
+        val *= filter.brightness!;
+        val = Math.min(255, Math.max(0, val));
+      }
+      if (hasContrast) {
+        val = factor * (val - 128) + 128;
+        val = Math.min(255, Math.max(0, val));
+      }
+      lut[i] = val;
+    }
+  }
+
   for (let i = 0; i < data.length; i += 4) {
-    // Apply brightness
-    if (filter.brightness) {
-      data[i] *= filter.brightness // R
-      data[i + 1] *= filter.brightness // G
-      data[i + 2] *= filter.brightness // B
+    if (lut) {
+      data[i] = lut[data[i]];
+      data[i + 1] = lut[data[i + 1]];
+      data[i + 2] = lut[data[i + 2]];
     }
 
-    // Apply contrast
-    if (filter.contrast) {
-      const factor = (259 * (filter.contrast + 255)) / (255 * (259 - filter.contrast))
-      data[i] = factor * (data[i] - 128) + 128
-      data[i + 1] = factor * (data[i + 1] - 128) + 128
-      data[i + 2] = factor * (data[i + 2] - 128) + 128
-    }
-
-    // Apply saturation
-    if (filter.saturation) {
-      const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2]
-      data[i] = gray * (1 - filter.saturation) + data[i] * filter.saturation
-      data[i + 1] = gray * (1 - filter.saturation) + data[i + 1] * filter.saturation
-      data[i + 2] = gray * (1 - filter.saturation) + data[i + 2] * filter.saturation
+    if (hasSaturation) {
+      const gray = 0.2989 * data[i] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2];
+      data[i] = gray * (1 - filter.saturation!) + data[i] * filter.saturation!;
+      data[i + 1] = gray * (1 - filter.saturation!) + data[i + 1] * filter.saturation!;
+      data[i + 2] = gray * (1 - filter.saturation!) + data[i + 2] * filter.saturation!;
     }
   }
 
