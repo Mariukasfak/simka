@@ -41,7 +41,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}
       >
-        {Icon && <Icon className="mr-2 h-4 w-4" />}
+        {Icon && <Icon className="mr-2 h-4 w-4" aria-hidden="true" />}
         {children}
       </button>
     )
