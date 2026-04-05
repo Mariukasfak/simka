@@ -420,20 +420,28 @@ export default function RelativePositionDraggableImage({
     updateContainerDimensions();
     updateBounds();
     
+    // ⚡ Bolt Performance Optimization: Fix unremovable resize event listener memory leak and debounce resize events
+    let resizeRafId: number;
+    const handleResize = () => {
+      if (resizeRafId) cancelAnimationFrame(resizeRafId);
+      resizeRafId = requestAnimationFrame(() => {
+        updateContainerDimensions();
+        updateBounds();
+
+        // Atkuriame poziciją iš santykinės pozicijos po dydžio pakeitimo
+        if (currentRelativePositionRef.current) {
+          const absPos = relativeToAbsolutePosition(currentRelativePositionRef.current);
+          updateElementPosition(absPos, currentRelativePositionRef.current);
+        }
+      });
+    };
+
     // Pridedame įvykio klausymą lango dydžio pakeitimui
-    window.addEventListener('resize', () => {
-      updateContainerDimensions();
-      updateBounds();
-      
-      // Atkuriame poziciją iš santykinės pozicijos po dydžio pakeitimo
-      if (currentRelativePositionRef.current) {
-        const absPos = relativeToAbsolutePosition(currentRelativePositionRef.current);
-        updateElementPosition(absPos, currentRelativePositionRef.current);
-      }
-    });
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      window.removeEventListener('resize', updateBounds);
+      window.removeEventListener('resize', handleResize);
+      if (resizeRafId) cancelAnimationFrame(resizeRafId);
     };
   }, [updateBounds, updateContainerDimensions, relativeToAbsolutePosition, updateElementPosition]);
   
