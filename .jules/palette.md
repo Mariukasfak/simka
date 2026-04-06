@@ -1,0 +1,3 @@
+## 2024-05-24 - Icon-only buttons accessibility in Tooltips
+**Learning:** React components containing raw `<button>` elements with `lucide-react` icons often lack native `focus-visible` styles and semantic ARIA labeling for non-visual users, especially in custom UI like tooltips (`showInitialTooltip` in `EnhancedDesignCanvas.tsx`).
+**Action:** Always add `aria-label` to the wrapper button, apply `aria-hidden="true"` to the internal SVG (e.g. `<X />`), and manually append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded` to ensure keyboard navigation visibility.
