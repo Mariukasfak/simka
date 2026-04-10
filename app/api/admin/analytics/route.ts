@@ -27,44 +27,39 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get total orders and revenue
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const thirtyDaysAgo = subDays(new Date(), 30)
 
-    if (ordersError) {
-      throw ordersError
-    }
+    // Execute queries concurrently
+    const [ordersResult, productsResult, revenueResult] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('id, total_price, customer_name, status, created_at')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('orders')
+        .select(`
+          product_id,
+          products (name)
+        `)
+        .limit(5),
+      supabase
+        .from('orders')
+        .select('created_at, total_price')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: true })
+    ])
+
+    if (ordersResult.error) throw ordersResult.error
+    if (productsResult.error) throw productsResult.error
+    if (revenueResult.error) throw revenueResult.error
+
+    const orders = ordersResult.data || []
+    const popularProducts = productsResult.data || []
+    const dailyRevenue = revenueResult.data || []
 
     const totalOrders = orders.length
     const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-    // Get popular products
-    const { data: popularProducts, error: productsError } = await supabase
-      .from('orders')
-      .select(`
-        product_id,
-        products (name)
-      `)
-      .limit(5)
-
-    if (productsError) {
-      throw productsError
-    }
-
-    // Get daily revenue for the last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30)
-    const { data: dailyRevenue, error: revenueError } = await supabase
-      .from('orders')
-      .select('created_at, total_price')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
-
-    if (revenueError) {
-      throw revenueError
-    }
 
     // Process daily revenue data
     const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
@@ -86,10 +81,16 @@ export async function GET(request: Request) {
       averageOrderValue,
       popularProducts: popularProducts.map((item: any) => ({
         productId: item.product_id,
-        name: item.products.name,
+        name: item.products?.name,
         count: 1 // This should be aggregated in the query
       })),
-      recentOrders: orders.slice(0, 10),
+      recentOrders: orders.slice(0, 10).map((order: any) => ({
+        id: order.id,
+        customerName: order.customer_name,
+        status: order.status,
+        totalPrice: order.total_price,
+        createdAt: order.created_at
+      })),
       dailyRevenue: dailyRevenueData
     }
 
