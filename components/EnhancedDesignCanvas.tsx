@@ -599,9 +599,10 @@ export default function EnhancedDesignCanvas({
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-accent-100 text-accent-800 p-3 rounded-lg shadow-lg border border-accent-200 max-w-xs text-center z-30">
                 <button 
                   onClick={() => setShowInitialTooltip(false)}
-                  className="absolute top-1 right-1 text-accent-500 hover:text-accent-700"
+                  className="absolute top-1 right-1 text-accent-500 hover:text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded"
+                  aria-label="Uždaryti patarimą"
                 >
-                  <X size={16} />
+                  <X size={16} aria-hidden="true" />
                 </button>
                 <p className="text-sm font-medium mb-1">Tempkite logotipą pele!</p>
                 <p className="text-xs">Galite keisti dydį, pasukimą ir poziciją naudodami valdiklius viršuje</p>
@@ -716,9 +717,10 @@ export default function EnhancedDesignCanvas({
               <h3 className="text-lg font-bold">Kaip naudotis dizaino įrankiu</h3>
               <button 
                 onClick={() => setShowHelp(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded"
+                aria-label="Uždaryti pagalbos langą"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             
