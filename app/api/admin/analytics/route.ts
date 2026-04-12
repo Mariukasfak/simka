@@ -27,44 +27,49 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get total orders and revenue
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (ordersError) {
-      throw ordersError
-    }
-
-    const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-    // Get popular products
-    const { data: popularProducts, error: productsError } = await supabase
-      .from('orders')
-      .select(`
-        product_id,
-        products (name)
-      `)
-      .limit(5)
-
-    if (productsError) {
-      throw productsError
-    }
-
-    // Get daily revenue for the last 30 days
     const thirtyDaysAgo = subDays(new Date(), 30)
-    const { data: dailyRevenue, error: revenueError } = await supabase
-      .from('orders')
-      .select('created_at, total_price')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
 
-    if (revenueError) {
-      throw revenueError
-    }
+    // Parallelize independent queries
+    const [
+      { data: allOrders, error: ordersError },
+      { data: recentOrders, error: recentOrdersError },
+      { data: popularProducts, error: productsError },
+      { data: dailyRevenue, error: revenueError }
+    ] = await Promise.all([
+      // Get only required fields for total orders and revenue
+      supabase
+        .from('orders')
+        .select('id, total_price'),
+      // Get recent orders explicitly with a limit
+      supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      // Get popular products
+      supabase
+        .from('orders')
+        .select(`
+          product_id,
+          products (name)
+        `)
+        .limit(5),
+      // Get daily revenue for the last 30 days
+      supabase
+        .from('orders')
+        .select('created_at, total_price')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: true })
+    ])
+
+    if (ordersError) throw ordersError
+    if (recentOrdersError) throw recentOrdersError
+    if (productsError) throw productsError
+    if (revenueError) throw revenueError
+
+    const totalOrders = allOrders.length
+    const totalRevenue = allOrders.reduce((sum, order) => sum + order.total_price, 0)
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
     // Process daily revenue data
     const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
@@ -89,7 +94,7 @@ export async function GET(request: Request) {
         name: item.products.name,
         count: 1 // This should be aggregated in the query
       })),
-      recentOrders: orders.slice(0, 10),
+      recentOrders,
       dailyRevenue: dailyRevenueData
     }
 
