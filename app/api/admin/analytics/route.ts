@@ -27,44 +27,49 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get total orders and revenue
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    // Get daily revenue for the last 30 days
+    const thirtyDaysAgo = subDays(new Date(), 30)
+
+    // ⚡ PERFORMANCE: Parallelize independent Supabase queries to reduce overall latency
+    const [
+      { data: orders, error: ordersError },
+      { data: popularProducts, error: productsError },
+      { data: dailyRevenue, error: revenueError }
+    ] = await Promise.all([
+      supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('orders')
+        .select(`
+        product_id,
+        products (name)
+      `)
+        .limit(5),
+      supabase
+        .from('orders')
+        .select('created_at, total_price')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: true })
+    ])
 
     if (ordersError) {
       throw ordersError
     }
 
-    const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-    // Get popular products
-    const { data: popularProducts, error: productsError } = await supabase
-      .from('orders')
-      .select(`
-        product_id,
-        products (name)
-      `)
-      .limit(5)
-
     if (productsError) {
       throw productsError
     }
 
-    // Get daily revenue for the last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30)
-    const { data: dailyRevenue, error: revenueError } = await supabase
-      .from('orders')
-      .select('created_at, total_price')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
-
     if (revenueError) {
       throw revenueError
     }
+
+    // Calculate total orders and revenue
+    const totalOrders = orders.length
+    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
     // Process daily revenue data
     const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
