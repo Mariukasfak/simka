@@ -1,0 +1,3 @@
+## 2025-04-15 - Add ARIA Labels and Focus States to Raw Buttons
+**Learning:** In React components like `EnhancedDesignCanvas`, raw `<button>` elements used for simple actions (like closing a tooltip or modal) often lack accessibility attributes by default. While standard custom `<Button>` components typically handle this, bespoke inline buttons frequently miss them.
+**Action:** Always scan for raw `<button>` elements in UI components. Add `aria-label`s localized to the surrounding UI language (e.g., "Uždaryti" for Lithuanian) to icon-only buttons, and append focus-visible utility classes (e.g., `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded`) to ensure screen readers and keyboard users can properly interact with them.
