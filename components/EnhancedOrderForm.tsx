@@ -276,7 +276,7 @@ export default function EnhancedOrderForm({
                 {designPreviews[area] && (
                   <button
                     type="button"
-                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-800"
+                    className="ml-auto text-xs text-indigo-600 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 rounded"
                     onClick={() => showPreviewForArea(area)}
                   >
                     Peržiūrėti

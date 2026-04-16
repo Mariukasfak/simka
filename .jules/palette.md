@@ -1,0 +1,3 @@
+## 2025-04-16 - Focus Visible Utilities for Keyboard Nav
+**Learning:** Standard React `<button>` elements miss custom focus rings. Using Tailwind's `focus-visible:` classes dynamically adapts focus rings for different contexts (e.g. `ring-accent-600` for CTA, `ring-gray-400` for default secondary buttons).
+**Action:** Always verify `focus-visible` styles when implementing or standardizing raw `<button>` elements, especially alongside `aria-label`s for icon-only buttons like `<X />`. Also ensure you append `rounded` or `rounded-lg` so the focus ring isn't squared off sharply if the button layout inherently is rounded.
