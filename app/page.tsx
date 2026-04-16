@@ -257,7 +257,7 @@ function HomeContent() {
               {/* Pataisytas CTA mygtukas - aiškiai matomas ir ryškus */}
               <button 
                 onClick={handleStartDesigning}
-                className="px-8 py-4 bg-accent-600 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-accent-700 transition-colors inline-flex items-center justify-center"
+                className="px-8 py-4 bg-accent-600 text-white text-lg font-bold rounded-lg shadow-lg hover:bg-accent-700 transition-colors inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2"
                 style={{ minWidth: '220px' }}
               >
                 Pradėti kurti dizainą

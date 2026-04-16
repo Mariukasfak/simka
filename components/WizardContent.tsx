@@ -73,7 +73,7 @@ export default function WizardContent({
       <div className="flex justify-end">
         <button
           onClick={onNextStep}
-          className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
+          className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2"
         >
           Toliau
         </button>
@@ -139,7 +139,7 @@ export default function WizardContent({
                   <button
                     key={position}
                     onClick={() => onViewChange(position as PrintAreaPosition)}
-                    className={`p-3 rounded-lg text-center transition ${
+                    className={`p-3 rounded-lg text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 ${
                       currentView === position
                         ? "bg-accent-100 border border-accent-300"
                         : "bg-gray-50 hover:bg-gray-100"
@@ -175,7 +175,7 @@ export default function WizardContent({
         <div className="flex justify-between">
           <button
             onClick={() => onNextStep()}
-            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
           >
             Atgal
           </button>
@@ -186,7 +186,7 @@ export default function WizardContent({
               Object.values(designPreviews).some((p) => p !== null)
                 ? "bg-accent-600 text-white hover:bg-accent-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            } rounded-lg transition-colors`}
+            } rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2`}
           >
             Toliau į užsakymą
           </button>
