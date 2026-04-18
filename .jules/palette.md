@@ -1,0 +1,3 @@
+## $(date +%Y-%m-%d) - Added accessible close buttons
+**Learning:** Hardcoded close buttons (e.g., using `X` from `lucide-react`) in `EnhancedDesignCanvas.tsx` lacked ARIA labels and focus indicators, making them invisible to screen readers and difficult to use via keyboard navigation. Because the surrounding text is in Lithuanian, the accessibility tags must be localized as well to ensure a seamless experience.
+**Action:** Always add `aria-label`s (translated to the local language, e.g., "Uždaryti patarimą") and `focus-visible:outline-none focus-visible:ring-2` to custom icon-only buttons to guarantee screen reader and keyboard accessibility without disrupting the visual design.
