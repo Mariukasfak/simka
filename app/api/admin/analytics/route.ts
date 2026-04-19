@@ -1,84 +1,90 @@
-import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { AnalyticsData } from '@/lib/types'
-import { subDays, startOfDay, endOfDay } from 'date-fns'
+import { NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { AnalyticsData } from "@/lib/types";
+import { subDays, startOfDay, endOfDay } from "date-fns";
 
 // Nurodome Next.js, kad šis maršrutas turi būti dinaminis
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Check authentication and admin role
-    const { data: { session }, error: authError } = await supabase.auth.getSession()
+    const {
+      data: { session },
+      error: authError,
+    } = await supabase.auth.getSession();
     if (authError || !session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single()
+      .from("users")
+      .select("role")
+      .eq("id", session.user.id)
+      .single();
 
-    if (userError || !user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (userError || !user || user.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get total orders and revenue
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const thirtyDaysAgo = subDays(new Date(), 30);
 
-    if (ordersError) {
-      throw ordersError
-    }
+    // Parallelize Supabase queries for faster data fetching
+    const [ordersResult, popularProductsResult, dailyRevenueResult] =
+      await Promise.all([
+        supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("orders")
+          .select(
+            `
+          product_id,
+          products (name)
+        `,
+          )
+          .limit(5),
+        supabase
+          .from("orders")
+          .select("created_at, total_price")
+          .gte("created_at", thirtyDaysAgo.toISOString())
+          .order("created_at", { ascending: true }),
+      ]);
 
-    const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+    const { data: orders, error: ordersError } = ordersResult;
+    const { data: popularProducts, error: productsError } =
+      popularProductsResult;
+    const { data: dailyRevenue, error: revenueError } = dailyRevenueResult;
 
-    // Get popular products
-    const { data: popularProducts, error: productsError } = await supabase
-      .from('orders')
-      .select(`
-        product_id,
-        products (name)
-      `)
-      .limit(5)
+    if (ordersError) throw ordersError;
+    if (productsError) throw productsError;
+    if (revenueError) throw revenueError;
 
-    if (productsError) {
-      throw productsError
-    }
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + order.total_price,
+      0,
+    );
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // Get daily revenue for the last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30)
-    const { data: dailyRevenue, error: revenueError } = await supabase
-      .from('orders')
-      .select('created_at, total_price')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
+    // Process daily revenue data using an O(N) Map implementation instead of O(N^2) Array.find
+    const revenueMap = new Map<string, number>();
+    dailyRevenue.forEach((order) => {
+      const date = startOfDay(new Date(order.created_at)).toISOString();
+      const current = revenueMap.get(date) || 0;
+      revenueMap.set(date, current + order.total_price);
+    });
 
-    if (revenueError) {
-      throw revenueError
-    }
-
-    // Process daily revenue data
-    const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
-      const date = startOfDay(new Date(order.created_at)).toISOString()
-      const existingDay = acc.find(day => day.date === date)
-      
-      if (existingDay) {
-        existingDay.revenue += order.total_price
-      } else {
-        acc.push({ date, revenue: order.total_price })
-      }
-      
-      return acc
-    }, [])
+    const dailyRevenueData = Array.from(revenueMap.entries()).map(
+      ([date, revenue]) => ({
+        date,
+        revenue,
+      }),
+    );
 
     const analyticsData: AnalyticsData = {
       totalOrders,
@@ -87,18 +93,18 @@ export async function GET(request: Request) {
       popularProducts: popularProducts.map((item: any) => ({
         productId: item.product_id,
         name: item.products.name,
-        count: 1 // This should be aggregated in the query
+        count: 1, // This should be aggregated in the query
       })),
       recentOrders: orders.slice(0, 10),
-      dailyRevenue: dailyRevenueData
-    }
+      dailyRevenue: dailyRevenueData,
+    };
 
-    return NextResponse.json(analyticsData)
+    return NextResponse.json(analyticsData);
   } catch (error) {
-    console.error('Error fetching analytics:', error)
+    console.error("Error fetching analytics:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch analytics data' },
-      { status: 500 }
-    )
+      { error: "Failed to fetch analytics data" },
+      { status: 500 },
+    );
   }
 }
