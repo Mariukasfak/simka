@@ -1,0 +1,3 @@
+## 2025-04-19 - Added ARIA labels and focus styles to icon-only buttons in EnhancedDesignCanvas
+**Learning:** Raw `<button>` elements in this codebase require explicit `aria-label`s when they contain only icons (e.g., `<X />`). Furthermore, they need custom `focus-visible` utility classes (like `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 rounded`) to ensure they are accessible via keyboard navigation, as these styles are not applied by default outside of the `Button.tsx` component.
+**Action:** When adding or updating raw button elements, especially icon-only ones, always include an appropriate localized `aria-label` (e.g., "Uždaryti" for close) and apply explicit focus-visible classes for keyboard accessibility.
