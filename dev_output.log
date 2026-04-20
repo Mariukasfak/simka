@@ -1,0 +1,27 @@
+
+> siemka-design-tool@0.1.0 dev /app
+> next dev
+
+ ⚠ `experimental.typedRoutes` has been moved to `typedRoutes`. Please update your next.config.mjs file accordingly.
+ ⚠ Port 3000 is in use by an unknown process, using available port 3003 instead.
+   ▲ Next.js 15.5.15
+   - Local:        http://localhost:3003
+   - Network:      http://192.168.0.2:3003
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ optimizeCss
+     ✓ typedRoutes
+     · serverActions
+     · ...
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1499ms (235 modules)
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (215kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 11.5s (1301 modules)
+ GET / 200 in 13699ms
+ ⨯ The requested resource isn't a valid image for /images/tshirt_light.png received null
+ ⨯ The requested resource isn't a valid image for /images/tshirt_dark.png received null
+ ⨯ The requested resource isn't a valid image for /images/tshirt_light.png received null
