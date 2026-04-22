@@ -1,0 +1,3 @@
+## 2024-04-22 - Add ARIA Labels and Focus Styles to Modal/Tooltip Close Buttons
+**Learning:** Found that custom floating UI elements (like tooltips and custom modals) using icon-only close buttons often miss both screen reader contexts (`aria-label`) and explicit keyboard focus indicators (`focus-visible`).
+**Action:** Always review newly created or existing raw `<button>` elements for `aria-label` when they only contain SVGs/icons. Furthermore, manually append `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-{color} rounded` utility classes to raw buttons to ensure they have the same keyboard accessibility footprint as standard UI components.
