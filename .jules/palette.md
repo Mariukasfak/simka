@@ -1,0 +1,3 @@
+## 2026-04-24 - Adding aria-labels to plain <button> elements
+**Learning:** While the reusable `components/ui/Button.tsx` handles accessibility natively, there are several raw `<button>` instances used for simple icon interactions (like the Close 'X' in `EnhancedDesignCanvas.tsx`). These raw buttons often lack accessible names (`aria-label`) and clear focus states for keyboard navigation.
+**Action:** When auditing new or existing components that use raw `<button>` elements containing only icons, explicitly verify they have localized `aria-label` attributes and standard `focus-visible:ring-2` utility classes applied.
