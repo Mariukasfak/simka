@@ -67,18 +67,17 @@ export async function GET(request: Request) {
     }
 
     // Process daily revenue data
-    const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
+    // Optimized: Replace O(N^2) reduce+find with O(N) object map lookup
+    const revenueObj = dailyRevenue.reduce((acc: Record<string, number>, order) => {
       const date = startOfDay(new Date(order.created_at)).toISOString()
-      const existingDay = acc.find(day => day.date === date)
-      
-      if (existingDay) {
-        existingDay.revenue += order.total_price
-      } else {
-        acc.push({ date, revenue: order.total_price })
-      }
-      
+      acc[date] = (acc[date] || 0) + order.total_price
       return acc
-    }, [])
+    }, {})
+
+    const dailyRevenueData = Object.entries(revenueObj).map(([date, revenue]) => ({
+      date,
+      revenue
+    }))
 
     const analyticsData: AnalyticsData = {
       totalOrders,
