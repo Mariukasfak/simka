@@ -1,0 +1,3 @@
+## 2025-04-30 - ARIA Labels on Icon-Only Buttons
+**Learning:** In the `EnhancedDesignCanvas.tsx` component, icon-only buttons (like those using `Lucide-react` icons such as `<X />` and `<HelpCircle />`) lack context for screen readers. Using the `aria-label` attribute directly on the wrapping `<button>` is an effective way to improve accessibility without changing the visual design. When adding these, it's crucial to match the application's localized language (Lithuanian, e.g., "Uždaryti patarimą").
+**Action:** Always verify that newly added or existing icon-only buttons have an `aria-label` or visually hidden text that is localized correctly before submitting UI changes.
