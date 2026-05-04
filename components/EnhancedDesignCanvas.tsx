@@ -598,6 +598,7 @@ export default function EnhancedDesignCanvas({
             {showInitialTooltip && (
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-accent-100 text-accent-800 p-3 rounded-lg shadow-lg border border-accent-200 max-w-xs text-center z-30">
                 <button 
+                  aria-label="Uždaryti"
                   onClick={() => setShowInitialTooltip(false)}
                   className="absolute top-1 right-1 text-accent-500 hover:text-accent-700"
                 >
@@ -715,6 +716,7 @@ export default function EnhancedDesignCanvas({
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Kaip naudotis dizaino įrankiu</h3>
               <button 
+                aria-label="Uždaryti"
                 onClick={() => setShowHelp(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
