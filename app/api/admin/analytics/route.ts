@@ -67,18 +67,17 @@ export async function GET(request: Request) {
     }
 
     // Process daily revenue data
-    const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
+    const revenueMap = new Map<string, number>()
+
+    // O(N) map aggregation instead of O(N^2) Array.find()
+    dailyRevenue.forEach(order => {
       const date = startOfDay(new Date(order.created_at)).toISOString()
-      const existingDay = acc.find(day => day.date === date)
-      
-      if (existingDay) {
-        existingDay.revenue += order.total_price
-      } else {
-        acc.push({ date, revenue: order.total_price })
-      }
-      
-      return acc
-    }, [])
+      const existingRevenue = revenueMap.get(date) || 0
+      revenueMap.set(date, existingRevenue + order.total_price)
+    })
+
+    // Convert back to expected array format, map inherently preserves insertion order
+    const dailyRevenueData = Array.from(revenueMap, ([date, revenue]) => ({ date, revenue }))
 
     const analyticsData: AnalyticsData = {
       totalOrders,
