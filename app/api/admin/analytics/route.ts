@@ -27,58 +27,56 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get total orders and revenue
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const thirtyDaysAgo = subDays(new Date(), 30)
 
-    if (ordersError) {
-      throw ordersError
-    }
+    // Parallelize independent database queries to reduce total response time
+    const [
+      { data: orders, error: ordersError },
+      { data: popularProducts, error: productsError },
+      { data: dailyRevenue, error: revenueError }
+    ] = await Promise.all([
+      // Get total orders and revenue
+      supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      // Get popular products
+      supabase
+        .from('orders')
+        .select(`
+          product_id,
+          products (name)
+        `)
+        .limit(5),
+      // Get daily revenue for the last 30 days
+      supabase
+        .from('orders')
+        .select('created_at, total_price')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('created_at', { ascending: true })
+    ])
+
+    if (ordersError) throw ordersError
+    if (productsError) throw productsError
+    if (revenueError) throw revenueError
 
     const totalOrders = orders.length
     const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0)
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
-    // Get popular products
-    const { data: popularProducts, error: productsError } = await supabase
-      .from('orders')
-      .select(`
-        product_id,
-        products (name)
-      `)
-      .limit(5)
-
-    if (productsError) {
-      throw productsError
-    }
-
-    // Get daily revenue for the last 30 days
-    const thirtyDaysAgo = subDays(new Date(), 30)
-    const { data: dailyRevenue, error: revenueError } = await supabase
-      .from('orders')
-      .select('created_at, total_price')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true })
-
-    if (revenueError) {
-      throw revenueError
-    }
-
     // Process daily revenue data
-    const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
+    // Use an O(1) Map lookup instead of O(N) Array.find to avoid an O(N^2) bottleneck
+    const dailyRevenueMap = new Map<string, number>()
+
+    for (const order of dailyRevenue) {
       const date = startOfDay(new Date(order.created_at)).toISOString()
-      const existingDay = acc.find(day => day.date === date)
-      
-      if (existingDay) {
-        existingDay.revenue += order.total_price
-      } else {
-        acc.push({ date, revenue: order.total_price })
-      }
-      
-      return acc
-    }, [])
+      const currentRevenue = dailyRevenueMap.get(date) || 0
+      dailyRevenueMap.set(date, currentRevenue + order.total_price)
+    }
+
+    const dailyRevenueData = Array.from(dailyRevenueMap.entries()).map(
+      ([date, revenue]) => ({ date, revenue })
+    )
 
     const analyticsData: AnalyticsData = {
       totalOrders,
