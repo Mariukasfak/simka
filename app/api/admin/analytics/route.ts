@@ -67,18 +67,21 @@ export async function GET(request: Request) {
     }
 
     // Process daily revenue data
-    const dailyRevenueData = dailyRevenue.reduce((acc: any[], order) => {
+    // Optimization: Using a Map instead of Array.find() inside a loop
+    // changes complexity from O(N^2) to O(N), which scales significantly better
+    // for datasets with many orders. Map naturally preserves chronological insertion order.
+    const dailyRevenueMap = new Map<string, number>()
+
+    for (const order of dailyRevenue) {
       const date = startOfDay(new Date(order.created_at)).toISOString()
-      const existingDay = acc.find(day => day.date === date)
-      
-      if (existingDay) {
-        existingDay.revenue += order.total_price
-      } else {
-        acc.push({ date, revenue: order.total_price })
-      }
-      
-      return acc
-    }, [])
+      const currentRevenue = dailyRevenueMap.get(date) || 0
+      dailyRevenueMap.set(date, currentRevenue + order.total_price)
+    }
+
+    const dailyRevenueData = Array.from(dailyRevenueMap.entries()).map(([date, revenue]) => ({
+      date,
+      revenue
+    }))
 
     const analyticsData: AnalyticsData = {
       totalOrders,
